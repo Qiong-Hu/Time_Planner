@@ -1,6 +1,6 @@
 # Autonomous Time Management Planner (ATMP)
 
-Updated: November 7th, by Qiong Hu
+Updated: January 25, 2020, by June
 
 **Keywords**: **TODO**
 
@@ -55,7 +55,7 @@ Updated: November 7th, by Qiong Hu
 
 compute every possibility -> computation complexity ~ N[task]^N[time period]
 
-#### method 1 (MDP?)
+#### Method 1 (MDP?)
 
 difference: no targeting state
 
@@ -67,7 +67,7 @@ Define reward function -> most complicated: so that to simulate the real-life si
 
 ...(detailed introduction on how to define reward function and why, also influence the parameters needed as input)
 
-#### method 2
+#### Method 2
 
 
 ### Demo
