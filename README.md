@@ -1,6 +1,6 @@
 # Autonomous Time Management Planner (ATMP)
 
-Updated: January 25, 2020, by June
+Updated: January 25, 2020, by June Hu
 
 **Keywords**: **TODO**
 
