@@ -1,10 +1,10 @@
 #coding: UTF-8
 '''
 =================== License Information ===================
-Author: 	Qiong Hu
+Author: 	June Hu
 Email: 		junesirius@ucla.edu
-Version: 	Ver 1.0.0
-Date: 		November 7, 2019
+Version: 	Ver 2.0.0
+Date: 		January 25, 2020
 '''
 
 import numpy as np
