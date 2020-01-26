@@ -51,10 +51,18 @@ Therefore, for me, the parameters are: $dur_{min} = 5, dur_{max} = 12, bed_{min}
 ![discrete rwd func for sleeping](https://github.com/wojiaoziyou/Time_Planner/blob/master/img/sleeping-rainbow.jpg)
 
 #### Meals
+- Parameters: $time$
+- suggested time period for three meals: [7, 10], [11, 14], [17, 20]
+- time-dependent reward curve: 
 
 ![rwd func for meals](https://github.com/wojiaoziyou/Time_Planner/blob/master/img/meal.jpg)
 
 #### Fixed-time tasks
+- Parameters: $start$, $duration$
+- reward curve:
+
+
+
 
 #### Fixed-deadline tasks
 
