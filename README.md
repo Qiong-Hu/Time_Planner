@@ -52,7 +52,7 @@ Therefore, for me, the parameters are: $dur_{min} = 5, dur_{max} = 12, bed_{min}
 
 #### Meals
 
-
+![rwd func for meals](https://github.com/wojiaoziyou/Time_Planner/blob/master/img/meal.jpg)
 
 #### Fixed-time tasks
 
