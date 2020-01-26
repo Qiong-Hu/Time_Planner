@@ -2,22 +2,21 @@
 
 Updated: January 25, 2020, by June Hu
 
-**Keywords**: **TODO**
-
 ## Abstract
 
-**TODO**
+Time management becomes increasingly difficult nowadays due to the overloading daily tasks and all kinds of pleasant desires. People have come up with all kinds of approaches to manage the time schedule, and the burden may be reduced with the help of machine decision-making process. Therefore, we introduce our system ATMP, "A Time Management Planner". With a few necessary inputs of the task information in a graphical interface, the planner would automatically come up with some suggested time schedules. The user can choose to follow them strictly or loosely, or run multiple times with the process of the tasks. The planner applies multiple optimization algorithms, on the basis of Markov Decision Process (MDP). The policy would keep updating until obtain a maximum gain and a minimum cost function are obtained within some range of errors. We tested the planner in a broad user-study, in various situations, and the results and feedbacks both show a positive potential application and development of our system.
 
+**Keywords**: Decision-making; Scheduling; System Optimization
 
 
 ## Contributions
 
-- developed an algorithm for auto time planning, useful in daily life
-- applied an interactive interface for casual user to use (low learning curve)
-- developed an optimization algorithm without target goal, only to optimize the reward function
-- developed multiple reward functions with weighted ratio for balancing purpose -> an extension of current reward function in most planning algorithms 
-- developed mathematical expression and algorithm that split the entangled element in the problem (sleeping time&duration) -> show in diagram
-- developed visualizable models to simulate daily-life time-management behavior, can be used in other related researches
+- Developed an algorithm for auto time planning, useful in daily life
+- Applied an interactive interface for casual user to use (low learning curve)
+- Developed an optimization algorithm without target goal, only to optimize the reward function
+- Developed multiple reward functions with weighted ratio for balancing purpose -> an extension of current reward function in most planning algorithms 
+- Developed mathematical expression and algorithm that split the entangled element in the problem (sleeping time&duration) -> show in diagram
+- Developed visualizable models to simulate daily-life time-management behavior, can be used in other related researches
 
 
 ## Introduction (Big Picture)
@@ -77,14 +76,16 @@ Updated: January 25, 2020, by June Hu
 
 ##### Meals
 
+##### Total rewards
 
-#### Naive method
+#### Policies
+##### Naïve policy
 
 `traversal everything`
 
 compute every possibility -> computation complexity ~ N[task]^N[time period]
 
-#### Method 1 (MDP?)
+##### Policy 1 (MDP?)
 
 difference: no targeting state
 
@@ -96,7 +97,7 @@ Define reward function -> most complicated: so that to simulate the real-life si
 
 ...(detailed introduction on how to define reward function and why, also influence the parameters needed as input)
 
-#### Method 2
+##### Policy 2
 
 
 ### Demo

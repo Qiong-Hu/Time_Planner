@@ -314,12 +314,3 @@ def output(plan):
 # print(tasks)
 # print(len(todolist))
 
-
-'''
-Reference
-- "Math in Society" (http://www.opentextbookstore.com/mathinsociety/2.4/mathinsociety.pdf)
-- PyYAML main website (https://pyyaml.org/)
-- python: yaml 模块 (https://www.jianshu.com/p/eaa1bf01b3a6)
-- 知乎-PyYAML学习 (https://zhuanlan.zhihu.com/p/42678768)
-
-'''

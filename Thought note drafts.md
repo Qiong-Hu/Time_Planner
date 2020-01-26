@@ -64,14 +64,14 @@
 	- sleeping
 		- have enjoyment rewards, exponentially increasing function
 		- low direct productivity, extra-productivity influence other tasks' productivity as a multiplication parameter and enjoyment by bedtime and duration
-		- 睡眠时间和长度都对其他活动的生产力和愉悦值有一个乘法参数的影响
-		- 睡眠长度的影响以5h14min作为一个极大值的初始值，以1.5h为周期在极大极小里变化，符合深度睡眠和浅睡眠周期，所以要乘一个三角函数
+		- 睡眠时间和长度都对其他活动的生产力和愉悦值有一个乘法参数的影响；具体数值大小与其他task的rwd数值没有关系，只是作为对系统整体的一个系数，自身的数值波动变化范围有作用
+		- 睡眠长度的影响以5h14min作为一个极大值的初始值，以1.5h为周期在极大极小里变化，符合深度睡眠和浅睡眠周期，所以要乘一个三角函数 -> TODO：step 2
 	- fixed-time tasks
 		- example: fixed task/lecture/appointment/etc
 		- use an extremely high constant, step, reward function
 		- fix it in the function to avoid unnecessary iteration (?)
-		- fixed-time task also have elasticity（虽然说是fixed-time但是其实有些也是可以有弹性的）：按照reward作为概率来决定去不去、去多久/迟到多久、大于多少的productivity就是一个接近1的概率表示必须去不能迟到
-		- 目前：数值与时间无关
+		- fixed-time task also have elasticity（虽然说是fixed-time但是其实有些也是可以有弹性的）：按照reward作为概率来决定去不去、去多久/迟到多久、大于多少的productivity就是一个接近1的概率表示必须去不能迟到 -> TODO：作为step 2的improvement内容
+		- 目前：当前数值与时间无关，累积数值与执行时间成线性
 	- fixed-DDL tasks
 		- zero rewards after DDL
 		- the later the lower both rewards, constant minus stress level (exponentially increasing function)
@@ -125,7 +125,15 @@
 - 第1种设定的缺点：不能劳逸结合，不同任务安排在不同时间对总reward没有影响（除了sleeping、transportation、fixed-time task等有强制时间节点要求的任务） -> 所以结合第1、2种设定的优缺点就有了结合版的第3种：用第1种搜索出适合安排在这一天的任务，用第2种把它们合理安排到一天中去，理论上这第3种应该是能得出最合理结果的（能体现各个任务的不同重要性、也能劳逸结合、理论上也应该不会出现不可解/得不出schedule建议的问题）
 - 关于每种设定的每种算法都可以找user-study（第一批user study从身边朋友开始，允许online地参与），让他们提供输入值，对提供的输出建议进行打分或严格实施一段时间来进行反馈；在user-study的最前面进行采访，询问平常的时间管理方法和a typical day；与其他time management的方法（传统或其他算法）作对比实验；要确定用什么方法来衡量效果
 
+
 ## Future works
 - collaborate with Google Calendar, plan out time management depends on tasks/hobbies/etc
 - rwd曲线可以通过data mininig/machine learning来实现
 - -> negative influence on human (?): 可能会让人更懒更有依赖、更加不能自己安排schedule/time
+
+
+## References
+- "Math in Society" (http://www.opentextbookstore.com/mathinsociety/2.4/mathinsociety.pdf)
+- PyYAML main website (https://pyyaml.org/)
+- python: yaml 模块 (https://www.jianshu.com/p/eaa1bf01b3a6)
+- 知乎-PyYAML学习 (https://zhuanlan.zhihu.com/p/42678768)
