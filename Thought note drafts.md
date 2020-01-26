@@ -94,7 +94,8 @@
 		- 实时rwd关于“执行时间”是常数（累积rwd就是关于“执行时间”的线性函数），这个常数是关于“坚持天数”的指数函数
 	- meal
 		- 定义了一个时间段范围，只有在范围内吃饭才能有比较高的rwd (for both)，根据时间段的上下bound作为高斯函数的参数得到某种类似拉宽的高斯/sigmoid curve，或者边缘比较圆润的step funcs（smoothstep func）
-		- 烧饭时间已经算进meal时间里了，不用再额外考虑
+		- 烧饭时间已经算进dinner的duration时间里了，不用再额外考虑
+		- 根据吃饭时间定义的rwd func再乘一个“实际用餐/duration”的比例，而且比例系数不会>1，表示吃饭时间太短的幸福感会下降，但是如果其他任务的整体rwd更高，可以予以牺牲
 	- trivial/daily-necessity tasks
 		- gaussian function for both rewards
 		- add fixed time (after get up, before classes/fixed-time appointments, before go to bed, etc) for transportation -> Update: 交通时间算到每件事件单独里面去，不再单独定义成一个独立的type，交通时间是task-independent；忽略交通时间的productivity和enjoyment) -> switch先作为输入的已知参数放进yaml里，但是rwd func里先不考虑，这个作为TODO的step 2，先把简单的没有switch的写出来，switch的时间里没有rwd但是必须安排
