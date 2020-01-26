@@ -14,13 +14,14 @@ sleeping:
                         # true productivity over time depends on bedtime and duration
                         # multiply by productivity of other tasks
 
-lecture:
+lecture:                # can be renamed to "lecture 1, 2, 3"etc, or the name of the lectuure
     type: fixed_time
     day:                # 1-7 for Mon.-Sun.
         - 2             # have classes on Tue. and Thu.
         - 4
     start: 14           # format: in 24h; fixed time start at 14:00
     duration: 2         # duration: 2 hours
+    switch: 0.25        # switch time: 15 minutes of transportation; also can be time needed to refocus after switch to a new task
     enjoyment: 5        # 0-10, float
     productivity: 8     # 0-10, float, the larger, the more important
 
@@ -28,12 +29,14 @@ hw:
     type: fixed_ddl
     approx_time: 3      # approximate required time: 3 hours, extended by certain percentage (like 40%) in the main planner function
     deadline: 10        # deadline in 10 hours
+    switch: 0.1         # switch time: 6 minutes; for preparation before hw, time to focus
     enjoyment: 1        # 0-10, float
     productivity: 5     # 0-10, float, the larger, the more important
 
 lab:
     type: as_soon_as_possible
     approx_time: 2      # approximate required time: 2 hours, extended by certain percentage (like 40%) in the main planner function
+    switch: 0.2         # switch time: 12 minutes, from deciding to do to actually begin to work
     enjoyment: 5        # 0-10, float
     productivity: 6     # 0-10, float, the larger, the more important
 
@@ -54,15 +57,8 @@ housekeeping:
                         # before bed ([bedtime - housekeeping.duration, bedtime])
                         # after get up ([bedtime + sleeping.duration, bedtime + sleeping.duration + housekeeping.duration])
     duration: 0.75      # 45 mins
-    enjoyment: 0        # 0-10, float
-    productivity: 0     # 0-10, float
-
-transportation:
-    type: necessity
-    time: []            # before class ([lecture.start - transportation.duration, lecture.start])
-    duration: 0.5       # 0.5 hours
-    enjoyment: 0        # 0-10, float
-    productivity: 0     # 0-10, float
+    enjoyment: 1        # 0-10, float
+    productivity: 1     # 0-10, float
 
 breakfast:
     type: meal

@@ -56,7 +56,7 @@
 - 原数据/输入值的储存：maybe use yaml to store raw datas and pyyaml to load
 - rewards的计算方法（按比例）：define "rewards" in both "enjoyment" and "productivity", define final goal reward as "strictness" ∈ [0, 1], rig=0 means max enjoyment (max fun tasks), rig=1 means max productivity (max working tasks), rig∈(0, 1) means somewhere in between, the user can decide by themselves, default settings can have lower rig in weekends
 - 生产力函数：
-	- 不同type的生产力函数的定义互相独立
+	- 不同type的生产力函数的定义互相独立，总生产力是所有生产力的和
 	- 每个任务的真实生产力值都包含与睡眠有关的参数（也可以在最后计算总rwd的时候再乘）："productivity" function of each task is independent according to the task type, but the "real" productivity of the task should multiply a parameter that is related to "sleeping time" and "sleeping hour"
 	- 可以是discrete的函数，参数是time slot的编号，就能用离散的算法来减少计算量等；以后改了time sample的长度也只是改这些离散函数的局部变量的time slot的编号就行
 - 任务切换有缓冲时间（或者直接用交通时间15min？）：if switch to new task, minus 3-5min to be new "effective time" in the next sampling time T
@@ -64,35 +64,40 @@
 	- sleeping
 		- have enjoyment rewards, exponentially increasing function
 		- low direct productivity, extra-productivity influence other tasks' productivity as a multiplication parameter and enjoyment by bedtime and duration
-		- 睡眠时间和长度都对其他活动的生产力和愉悦值有一个乘法参数的影响；其中睡眠长度的影响以5h14min作为一个极大值的初始值，以1.5h为周期在极大极小里变化，符合深度睡眠和浅睡眠周期，所以要乘一个三角函数
+		- 睡眠时间和长度都对其他活动的生产力和愉悦值有一个乘法参数的影响
+		- 睡眠长度的影响以5h14min作为一个极大值的初始值，以1.5h为周期在极大极小里变化，符合深度睡眠和浅睡眠周期，所以要乘一个三角函数
 	- fixed-time tasks
 		- example: fixed task/lecture/appointment/etc
 		- use an extremely high constant, step, reward function
 		- fix it in the function to avoid unnecessary iteration (?)
 		- fixed-time task also have elasticity（虽然说是fixed-time但是其实有些也是可以有弹性的）：按照reward作为概率来决定去不去、去多久/迟到多久、大于多少的productivity就是一个接近1的概率表示必须去不能迟到
+		- 目前：数值与时间无关
 	- fixed-DDL tasks
 		- zero rewards after DDL
 		- the later the lower both rewards, constant minus stress level (exponentially increasing function)
 		- starting enjoyment constant depends on how much you like about the task
+		- 是“距离ddl的时间”的函数，离ddl越近生产力愉悦值越低
 	- as-soon-as-possible (ASAP) (without DDL) tasks (原称the-earlier-the-better tasks)
 		- exponentially decreasing function for both rewards
 		- starting rewards value depend on how important and fun the task is
 		- 对不同的ASAP任务，指数衰减速度都相同：constant decreasing speed over different ASAP tasks
+		- 是“距离当前时间”的函数，拖的时间越长生产力愉悦值越低； 与fixed-DDL的区别在于“越低”的函数表达方式不同（常数减指数VS负指数函数：是否无限趋于某个值；凹函数VS凸函数）
 	- fun tasks
 		- high-constant enjoyment
 		- low-constant productivity
 		- weighted-randomly pick
+		- 实时rwd是“执行时间”的函数，所以和真实时间成线性关系->做的时间越长，总愉悦值越高
 	- long-term tasks
-		- 定义/特点：not so beneficial for now, beneficial if stick longer
-		- linearly increasing rewards (for both) over time
-		- randomly replace/add into the plan if none in weekly/daily plan
+		- 定义/特点：instant benefit not high for now, significant higher benefit if stick longer
+		- exponentially increasing rewards (for both) over time
+		- randomly replace/add into the plan if none in weekly/daily plan，在一系列最好长期坚持的任务中保证随机选至少一个（根据时间vacancy）
+		- 实时rwd关于“执行时间”是常数（累积rwd就是关于“执行时间”的线性函数），这个常数是关于“坚持天数”的指数函数
 	- meal
-		- 定义了一个时间段范围，只有在范围内吃饭才能有比较高的rwd (for both)，根据时间段的上下bound作为高斯函数的参数得到某种类似拉宽的高斯或者边缘比较圆润的step funcs
-		- 烧饭时间也算进meal时间里了
+		- 定义了一个时间段范围，只有在范围内吃饭才能有比较高的rwd (for both)，根据时间段的上下bound作为高斯函数的参数得到某种类似拉宽的高斯/sigmoid curve，或者边缘比较圆润的step funcs（smoothstep func）
+		- 烧饭时间已经算进meal时间里了，不用再额外考虑
 	- trivial/daily-necessity tasks
 		- gaussian function for both rewards
-		- add fixed time (after get up, before classes/fixed-time appointments, before go to bed, etc) for transportation
-		- -> Update: 交通时间算到每件事件单独里面去？或者单独定义成一个type再重新考虑一下)
+		- add fixed time (after get up, before classes/fixed-time appointments, before go to bed, etc) for transportation -> Update: 交通时间算到每件事件单独里面去，不再单独定义成一个独立的type，交通时间是task-independent；忽略交通时间的productivity和enjoyment) -> switch先作为输入的已知参数放进yaml里，但是rwd func里先不考虑，这个作为TODO的step 2，先把简单的没有switch的写出来，switch的时间里没有rwd但是必须安排
 		- rewards funcs对于不同的trivial task都一样（为了减少工作量，没必要单独考虑各个不重要不紧急又必须做的小事）
 		- 选择/schedule的时候随机：randomly pick some，增加一些（基于rwd的）随机函数进行选择，所以最终的总reward可能不是necessarily最优的reward但是更符合人自己的行为习惯
 		- 大部分都可以被压缩：can squeeze some of them
