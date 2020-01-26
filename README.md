@@ -4,7 +4,7 @@ Updated: January 26, 2020, by June Hu
 
 This task scheduler (a.k.a. time planner) aims to automatically, scientifically schedule various activities for students. 
 
-With an input todo-list (an example is shown [here](https://github.com/wojiaoziyou/Time_Planner/blob/master/todolist.yaml)), the system calculates the reward function based on real-life experience, for example, fixed-time tasks like lectures and fixed-deadline tasks like assignments generally have higher value in productivity, and fun activities have higher value in enjoyment. The scheduler takes both "$productivity$" and "$enjoyment$" into consideration, with a parameter called "$strictness$" to balance the two. The final reward value of a task would be the linear combination of productivity and enjoyment: 
+With an input todo-list (an example is shown [here](todolist.yaml)), the system calculates the reward function based on real-life experience, for example, fixed-time tasks like lectures and fixed-deadline tasks like assignments generally have higher value in productivity, and fun activities have higher value in enjoyment. The scheduler takes both "$productivity$" and "$enjoyment$" into consideration, with a parameter called "$strictness$" to balance the two. The final reward value of a task would be the linear combination of productivity and enjoyment: 
 $$
 reward=strictness*productivity+(1-strictness)*enjoyment,
 $$
@@ -44,25 +44,25 @@ $$
 rwd = rwd_{bed} * rwd_{dur}.
 $$
 
-The diagrams of ![3D function curve](https://github.com/wojiaoziyou/Time_Planner/blob/master/img/3D-bedtime_duration.jpg) and ![2D function curve](https://github.com/wojiaoziyou/Time_Planner/blob/master/img/func-bedtime_duration.jpg) show the dependent relationships. It makes sense that if I sleep really late (e.g. 4am), even if sleeping for a long period of time cannot undo the harm from the stay up to the body.
+The diagrams of ![3D function curve](img/3D-bedtime_duration.jpg) and ![2D function curve](img/func-bedtime_duration.jpg) show the dependent relationships. It makes sense that if I sleep really late (e.g. 4am), even if sleeping for a long period of time cannot undo the harm from the stay up to the body.
 
 Therefore, for me, the parameters are: $dur_{min} = 5, dur_{max} = 12, bed_{min} = 22, bed_{max} = 4$, and here is a diagram of reward to each pair of \{$duration$, $bedtime$\} in a discrete time step.
 
-![discrete rwd func for sleeping](https://github.com/wojiaoziyou/Time_Planner/blob/master/img/sleeping-rainbow.jpg)
+![discrete rwd func for sleeping](img/sleeping-rainbow.jpg)
 
 #### Meals
 - Parameters: $time$
 - suggested time period for three meals: [7, 10], [11, 14], [17, 20]
-- time-dependent reward curve: 
+- It's better to eat within the suggested time period, so time-dependent reward curve: 
 
-![rwd func for meals](https://github.com/wojiaoziyou/Time_Planner/blob/master/img/meal.jpg)
+![rwd func for meals](img/meal.jpg)
 
 #### Fixed-time tasks
 - Parameters: $start$, $duration$
-- reward curve:
+- Example: lecture, mandatory activities
+- reward doesn't change as long as arrange the activity in the schedule at its arranged time, so the reward curve is a constant over time, and the value is dependent on the $strictness$ according to Equation (1):
 
-
-
+![rwd func for fixed-time tasks](img/fixed-time.jpg)
 
 #### Fixed-deadline tasks
 
