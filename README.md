@@ -44,11 +44,15 @@ $$
 rwd = rwd_{bed} * rwd_{dur}.
 $$
 
+The diagrams of ![3D function curve](https://github.com/wojiaoziyou/Time_Planner/blob/master/img/3D-bedtime_duration.jpg) and ![2D function curve](https://github.com/wojiaoziyou/Time_Planner/blob/master/img/func-bedtime_duration.jpg) show the dependent relationships. It makes sense that if I sleep really late (e.g. 4am), even if sleeping for a long period of time cannot undo the harm from the stay up to the body.
 
+Therefore, for me, the parameters are: $dur_{min} = 5, dur_{max} = 12, bed_{min} = 22, bed_{max} = 4$, and here is a diagram of reward to each pair of \{$duration$, $bedtime$\} in a discrete time step.
 
-Therefore, for me, the parameters are: $dur_{min} = 5, dur_{max} = 12, bed_{min} = 22, bed_{max} = 4$, and 
+![discrete rwd func for sleeping](https://github.com/wojiaoziyou/Time_Planner/blob/master/img/sleeping-rainbow.jpg)
 
 #### Meals
+
+
 
 #### Fixed-time tasks
 
