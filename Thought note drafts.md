@@ -126,4 +126,6 @@
 - 关于每种设定的每种算法都可以找user-study（第一批user study从身边朋友开始，允许online地参与），让他们提供输入值，对提供的输出建议进行打分或严格实施一段时间来进行反馈；在user-study的最前面进行采访，询问平常的时间管理方法和a typical day；与其他time management的方法（传统或其他算法）作对比实验；要确定用什么方法来衡量效果
 
 ## Future works
-collaborate with Google Calendar, plan out time management depends on tasks/hobbies/etc -> negative influence on human (?): 可能会让人更懒更有依赖、更加不能自己安排schedule/time
+- collaborate with Google Calendar, plan out time management depends on tasks/hobbies/etc
+- rwd曲线可以通过data mininig/machine learning来实现
+- -> negative influence on human (?): 可能会让人更懒更有依赖、更加不能自己安排schedule/time

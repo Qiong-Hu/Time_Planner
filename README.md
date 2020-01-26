@@ -49,6 +49,35 @@ Updated: January 25, 2020, by June Hu
 
 ## Specific Project Scope
 ### Methods
+
+#### Define reward functions
+##### Task types
+- Fixed-time tasks
+- Fixed-deadline tasks
+- As-soon-as-possible tasks
+- Fun tasks
+- Long-term tasks
+- Daily-necessity tasks
+- Sleeping
+- Meals
+
+##### Fixed-time tasks
+
+##### Fixed-deadline tasks
+
+##### As-soon-as-possible tasks
+
+##### Fun tasks
+
+##### Long-term tasks
+
+##### Daily-necessity tasks
+
+##### Sleeping
+
+##### Meals
+
+
 #### Naive method
 
 `traversal everything`
