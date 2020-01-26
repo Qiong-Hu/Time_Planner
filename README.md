@@ -66,6 +66,8 @@ Therefore, for me, the parameters are: $dur_{min} = 5, dur_{max} = 12, bed_{min}
 
 #### Fixed-deadline tasks
 
+![rwd func for fixed-ddl tasks](img/fixed-ddl.jpg)
+
 #### As-soon-as-possible tasks
 
 #### Fun tasks
