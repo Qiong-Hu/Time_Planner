@@ -1,6 +1,6 @@
 today:
     curr_time: 13       # current time (=next integer hour): 13:00, for the start of the planner
-    day: 4              # 1-7 for Mon.-Sun., for fixed_time tasks
+    day: 1              # 1-7 for Mon.-Sun., for fixed_time tasks
     strictness: 0.5     # 0-1 for balance between enjoyment and productivity
 
 sleeping:
@@ -44,7 +44,7 @@ film:
 
 exercise:
     type: long_term
-    insist_day: 2       # insisted for 2 days
+    insist_day: 2       # insisted for 2 days, update every time of imiplementation
     enjoyment: 3        # 0-10, float
     productivity: 3     # 0-10, float
 

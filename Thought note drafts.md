@@ -1,4 +1,4 @@
-# Notes of casual thoughts 
+# Notes of casual thoughts (can ignore)
 
 ## Title & Abstract (draft at 20200123)
 
