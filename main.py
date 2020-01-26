@@ -96,7 +96,7 @@ def rwd_fixed_ddl(x, task, strictness):
 
 # Mathematical expression of reward function of as-soon-as-possible tasks
 def func_asap(x, a, k, c):
-	y = a * np.exp(- k * (x - c))
+	y = a * np.exp(-k * (x - c))
 	return y
 
 # Find function in the expression form of func_asap, by two points
@@ -175,16 +175,26 @@ def rwd_necessity(x, task, strictness):
 	else:
 		raise Exception("Wrong reward function for non-necessity task")
 
+
+# Logistic Sigmoid Curve, for func_meal
+def logisticSigmoid(x):
+	return 1/(1 + math.exp(-x))
+
+# Mathematical expression for reward fucntion of meals
+def func_meal(x, l, r):
+	# l, r: short for "left" and "right", lower and upper bounds for the curve
+	# 3 parts of y represents: lower bound to middle, middle to upper bound, for normalization (so y=0 when x is far away)
+	y = pow(logisticSigmoid((x - l + 1) * 3), 3) + pow(logisticSigmoid((r - x) * 3), 3) - 1
+	return y
+
 # Reward function of meals with input parameters
-def rwd_meal(x, task, strictness, ratio = 0.6):
-	# time = [start_time, end_time], end_time - start_time = 3
-	# ratio = 1: Gaussian func at mean = start_time, ratio = 0: Gaussian func at mean = end_time, ratio ∈ (0, 1): somewhere in between
+def rwd_meal(x, task, strictness):
+	# time = [start_time, end_time], end_time - start_time = 3 hours
 	# task.keys(): type, time, duration, enjoyment, productivity
 	if task["type"] == "meal":
 		time = task["time"]
 		reward = rwd_after_strict(strictness, task["enjoyment"], task["productivity"])
-
-		y = ratio * reward * np.exp(-(x - (time[0] + 0.5)) ** 2 / (2 * 0.5 ** 2)) + (1 - ratio) * reward * np.exp(-(x - (time[0] + time[1]) / 2) ** 2 / (2 * 1 ** 2))
+		y = reward * func_meal(x, time[0], time[1])
 		return y
 	else:
 		raise Exception("Wrong reward function for non-meal task")
