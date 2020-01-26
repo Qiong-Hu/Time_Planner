@@ -178,7 +178,7 @@ def rwd_necessity(x, task, strictness):
 
 # Logistic Sigmoid Curve, for func_meal
 def logisticSigmoid(x):
-	return 1/(1 + math.exp(-x))
+	return 1/(1 + np.exp(-x))
 
 # Mathematical expression for reward fucntion of meals
 def func_meal(x, l, r):
@@ -201,7 +201,7 @@ def rwd_meal(x, task, strictness):
 
 # From given parameters, return reward
 def func_sleeping_duration(x, duration_min, duration_max, reward):
-	# duration_min <= duration_max
+	# duration_min <= duration_max, e.g.: min = 5, max = 12
 	if duration_min <= x <= duration_max:
 		y = rwd * (1 - np.exp(-0.8 * (x - duration_min)))
 	else:
@@ -211,6 +211,7 @@ def func_sleeping_duration(x, duration_min, duration_max, reward):
 def func_sleeping_bedtime(x, bedtime_min, bedtime_max, reward):
 	# bedtime_min ∈ [21, 24] -> earliest time to go to bed: 21:00-24:00
 	# bedtime_max ∈ [0, 4] -> latest time to go to bed: 0:00-4:00
+	# e.g.: min = 22, max = 4
 	if bedtime_min <= x <= 24:
 		y = reward * np.exp(-(x - bedtime_min))
 	elif 0 <= x <= bedtime_max:
