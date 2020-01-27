@@ -143,16 +143,17 @@ def rwd_fun(x, task, strictness):
 		raise Exception("Wrong reward function for non-fun task")
 
 # Reward function of long-term-beneficial tasks with input parameters
-def rwd_long_term(x, task, strictness, rwd_adjust = 5, T = T):
+def rwd_long_term(x, task, strictness, rwd_adjust = 5, lamda = 0.7):
 	# x: time duration of the task, accumulated after each day
 	# rwd_adjust: in case the reward in the short-term becomes too high compared to other more urgent tasks, make sure the accumulated reward in the long term is high
+	# lamba: decay coefficient
 	# task.keys(): type, insist_day, enjoyment, productivity
 	if task["type"] == "long_term":
 		insist_day = task["insist_day"]
 		reward = rwd_after_strict(strictness, task["enjoyment"], task["productivity"])
 
 		if x >= 0:
-			y = reward / rwd_adjust * insist_day + reward / T * x
+			y = reward / rwd_adjust * (insist_day * lamda + 1) * x
 		else:
 			y = 0
 		return y
