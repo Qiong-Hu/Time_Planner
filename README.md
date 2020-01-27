@@ -48,7 +48,7 @@ The diagrams of ![3D function curve](img/3D-bedtime_duration.jpg) and ![2D funct
 
 Therefore, for me, the parameters are: $dur_{min} = 5, dur_{max} = 12, bed_{min} = 22, bed_{max} = 4$, and here is a diagram of reward to each pair of \{$duration$, $bedtime$\} in a discrete time step.
 
-![discrete rwd func for sleeping](img/sleeping-rainbow.jpg)
+![discrete rwd func for sleeping](img/sleeping.jpg)
 
 #### Meals
 - Parameters: $time$
@@ -69,6 +69,8 @@ Therefore, for me, the parameters are: $dur_{min} = 5, dur_{max} = 12, bed_{min}
 ![rwd func for fixed-ddl tasks](img/fixed-ddl.jpg)
 
 #### As-soon-as-possible tasks
+
+![rwd func for asap tasks](img/asap.jpg)
 
 #### Fun tasks
 
