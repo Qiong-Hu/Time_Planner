@@ -181,7 +181,7 @@ def rwd_long_term(x, task, strictness, lamda = 0.7):
 
 # Reward function of daily-necessary tasks
 def rwd_necessity(x, task, strictness):
-	# x: tbd
+	# x: duration time
 	# task.keys(): type, time, duration, enjoyment, productivity
 	if task["type"] == "necessity":
 		duration = task["duration"]
@@ -203,6 +203,7 @@ def logisticSigmoid(x):
 def func_meal(x, l, r):
 	# l, r: short for "left" and "right", lower and upper bounds for the curve
 	# 3 parts of y represents: lower bound to middle, middle to upper bound, for normalization (so y=0 when x is far away)
+	# Normalized (y_max = 1 for any x)
 	y = pow(logisticSigmoid((x - l + 1) * 3), 3) + pow(logisticSigmoid((r - x) * 3), 3) - 1
 	return y
 
