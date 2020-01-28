@@ -78,5 +78,7 @@ Therefore, for me, the parameters are: $dur_{min} = 5, dur_{max} = 12, bed_{min}
 
 #### Long-term tasks
 
+![rwd func for long-term tasks](img/long-term.jpg)
+
 #### Daily-necessity tasks
 
