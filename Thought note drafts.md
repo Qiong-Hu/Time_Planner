@@ -64,6 +64,8 @@
 	- sleeping
 		- have enjoyment rewards, exponentially increasing function
 		- low direct productivity, extra-productivity influence other tasks' productivity as a multiplication parameter and enjoyment by bedtime and duration
+		- 关于上床时间：趋于0
+		- 关于睡眠时长：趋于饱和
 		- 睡眠时间和长度都对其他活动的生产力和愉悦值有一个乘法参数的影响；具体数值大小与其他task的rwd数值没有关系，只是作为对系统整体的一个系数，自身的数值波动变化范围有作用
 		- 睡眠长度的影响以5h14min作为一个极大值的初始值，以1.5h为周期在极大极小里变化，符合深度睡眠和浅睡眠周期，所以要乘一个三角函数 -> TODO：step 2
 	- fixed-time tasks
@@ -76,7 +78,7 @@
 		- zero rewards after DDL
 		- the later the lower both rewards, constant minus stress level (exponentially increasing function)
 		- starting enjoyment constant depends on how much you like about the task
-		- 是“距离ddl的时间”的函数，离ddl越近生产力愉悦值越低
+		- 是“距离ddl的时间”的函数，离ddl越近生产力愉悦值越低，趋于0但保证即使到达ddl也还没到0，在ddl前后有一个跳变
 	- as-soon-as-possible (ASAP) (without DDL) tasks (原称the-earlier-the-better tasks)
 		- exponentially decreasing function for both rewards
 		- starting rewards value depend on how important and fun the task is
@@ -86,12 +88,13 @@
 		- high-constant enjoyment
 		- low-constant productivity
 		- weighted-randomly pick
-		- 实时rwd是“执行时间”的函数，所以和真实时间成线性关系->做的时间越长，总愉悦值越高
+		- 实时rwd与“执行时间”无关，是常数，≈fixed-time task，但是producivity和enjoyment的高低是反的，所以和累积时间成线性关系 -> 做的时间越长，总愉悦值越高
 	- long-term tasks
-		- 定义/特点：instant benefit not high for now, significant higher benefit if stick longer
-		- exponentially increasing rewards (for both) over time
+		- 定义/特点：instant benefit not high for now, higher accumulative benefit if stick longer
+		- squared increasing rewards (for both) over time of insisted days，天数越多越高，前期上升快，后期变慢但是数值还是保持比较高
+		- rwd comes to a saturation to a limitation for one-day activity time，这个趋于饱和的函数≈sleeping duration的函数（改了饱和系数），达到duration max时的rwd比例接近最大值的0.99
 		- randomly replace/add into the plan if none in weekly/daily plan，在一系列最好长期坚持的任务中保证随机选至少一个（根据时间vacancy）
-		- 实时rwd关于“执行时间”是常数（累积rwd就是关于“执行时间”的线性函数），这个常数是关于“坚持天数”的指数函数
+		- 实时rwd关于当天的“执行时间”会趋于饱和（避免在坚持天数上升到太高时rwd值太高，导致大量增加这个任务）；这个趋于的饱和值是关于“坚持天数”的上升函数
 	- meal
 		- 定义了一个时间段范围，只有在范围内吃饭才能有比较高的rwd (for both)，根据时间段的上下bound作为高斯函数的参数得到某种类似拉宽的高斯/sigmoid curve，或者边缘比较圆润的step funcs（smoothstep func）
 		- 烧饭时间已经算进dinner的duration时间里了，不用再额外考虑

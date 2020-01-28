@@ -48,6 +48,7 @@ film:
 exercise:
     type: long_term
     insist_day: 2       # insisted for 2 days, update every time of imiplementation
+    duration_max: 1.5   # maximum duration time for one day: 1.5h
     enjoyment: 3        # 0-10, float
     productivity: 3     # 0-10, float
 

@@ -16,7 +16,8 @@ import time
 import random
 import yaml
 
-T = 0.25			# Sampling time duration: 0.25 hour (15 mins)
+T = 1				# For now, sampling: 1 hour (min time on each task is 1h)
+					# Suggested sampling time duration: 0.25 hour (15 mins)
 					# T must = 60/interger
 approx_err = 1.4	# Procrastination time percentage based on approx_time
 
@@ -33,7 +34,7 @@ def rwd_after_strict(strictness, enjoyment, productivity):
 	# strictness ∈ [0, 1]
 	return strictness * productivity + (1 - strictness) * enjoyment
 
-# Reward function for fixed-time tasks (for enjoyment and productivity)
+# Reward function of fixed-time tasks
 def rwd_fixed_time(x, task, strictness):
 	# x: exact hour of a day, ∈ [0, 24]
 	# task.keys(): type, day, start, duration, enjoyment, productivity
@@ -41,6 +42,7 @@ def rwd_fixed_time(x, task, strictness):
 		start = task["start"]
 		duration = task["duration"]
 		reward = rwd_after_strict(strictness, task["enjoyment"], task["productivity"])
+
 		if start <= x <= start + duration:
 			y = reward
 		else:
@@ -67,7 +69,7 @@ def findfunc_fixed_ddl(x, p1, p2):
 	c = p1[0]
 	return func_fixed_ddl(x, a, k, c)
 
-# Reward function of fixed-ddl tasks with input parameters
+# Reward function of fixed-ddl tasks
 def rwd_fixed_ddl(x, task, strictness):
 	# x: time duration since now
 	# task.keys(): type, approx_time, deadline, enjoyment, productivity
@@ -109,7 +111,7 @@ def findfunc_asap(x, p1, p2):
 	c = p1[0]
 	return func_asap(x, a, k, c)
 
-# Reward function of asap tasks with input parameters
+# Reward function of asap tasks
 def rwd_asap(x, task, strictness):
 	# x: time duration since now
 	# task.keys(): type, approx_time, enjoyment, productivity
@@ -127,7 +129,7 @@ def rwd_asap(x, task, strictness):
 	else:
 		raise Exception("Wrong reward function for non-asap task")
 
-# Reward function of fun tasks with input parameters
+# Reward function of fun tasks
 def rwd_fun(x, task, strictness):
 	# x: time duration of the task
 	# task.keys(): type, enjoyment, productivity
@@ -142,25 +144,42 @@ def rwd_fun(x, task, strictness):
 	else:
 		raise Exception("Wrong reward function for non-fun task")
 
-# Reward function of long-term-beneficial tasks with input parameters
-def rwd_long_term(x, task, strictness, rwd_adjust = 5, lamda = 0.7):
+# Mathematical expression of long-term tasks, dependent on the duration
+def func_long_term_duration(x, duration_max):
+	if 0 <= x <= duration_max:
+		y = 1 - np.exp(-x * 5 / duration_max)
+	else:
+		y = 0
+	return y
+
+# Mathematical expression of long-term tasks, dependent on insisted days
+def func_long_term_insist_days(insist_day, lamda):
+	# insist_day: number of days that has been insisting on working on the long-term task; must be >0
+	# lamda: dacay coefficient to reduce (a little bit) past influence, compared to the present commitment; ∈ [0, 1]
+	if insist_day >= 0 and 0 <= lamda <= 1:
+		y = np.sqrt(insist_day * lamda + 1)
+		return y
+	else:
+		raise Exception("Wrong inputs for long-term task")
+
+# Reward function of long-term-beneficial tasks
+def rwd_long_term(x, task, strictness, lamda = 0.7):
 	# x: time duration of the task, accumulated after each day
-	# rwd_adjust: in case the reward in the short-term becomes too high compared to other more urgent tasks, make sure the accumulated reward in the long term is high
-	# lamba: decay coefficient
-	# task.keys(): type, insist_day, enjoyment, productivity
+	# lamba: decay coefficient for past insisted days
+	# task.keys(): type, insist_day, duration_max, enjoyment, productivity
 	if task["type"] == "long_term":
 		insist_day = task["insist_day"]
 		reward = rwd_after_strict(strictness, task["enjoyment"], task["productivity"])
 
 		if x >= 0:
-			y = reward / rwd_adjust * (insist_day * lamda + 1) * x
+			y = reward * func_long_term_insist_days(insist_day, lamda) * func_long_term_duration(x, duration_max)
 		else:
 			y = 0
 		return y
 	else:
 		raise Exception("Wrong reward function for non-long-term task")
 
-# Reward function of daily-necessary tasks with input parameters
+# Reward function of daily-necessary tasks
 def rwd_necessity(x, task, strictness):
 	# x: tbd
 	# task.keys(): type, time, duration, enjoyment, productivity
@@ -176,10 +195,9 @@ def rwd_necessity(x, task, strictness):
 	else:
 		raise Exception("Wrong reward function for non-necessity task")
 
-
 # Logistic Sigmoid Curve, for func_meal
 def logisticSigmoid(x):
-	return 1/(1 + np.exp(-x))
+	return 1 / (1 + np.exp(-x))
 
 # Mathematical expression for reward fucntion of meals
 def func_meal(x, l, r):
@@ -188,7 +206,7 @@ def func_meal(x, l, r):
 	y = pow(logisticSigmoid((x - l + 1) * 3), 3) + pow(logisticSigmoid((r - x) * 3), 3) - 1
 	return y
 
-# Reward function of meals with input parameters
+# Reward function of meals
 def rwd_meal(x, task, strictness):
 	# time = [start_time, end_time], end_time - start_time = 3 hours
 	# task.keys(): type, time, duration, enjoyment, productivity
@@ -200,27 +218,31 @@ def rwd_meal(x, task, strictness):
 	else:
 		raise Exception("Wrong reward function for non-meal task")
 
-# From given parameters, return reward
-def func_sleeping_duration(x, duration_min, duration_max, reward):
-	# duration_min <= duration_max, e.g.: min = 5, max = 12
-	if duration_min <= x <= duration_max:
-		y = rwd * (1 - np.exp(-0.8 * (x - duration_min)))
+# Mathematical expression for sleeping duration
+def func_sleeping_duration(x, duration_min, duration_max):
+	# Assume: duration_min <= duration_max
+	# e.g.: min = 5, max = 12
+	# the parameter 5/(max-min) makes sure when x>=max, 0.99 <= y <= 1 (saturation)
+	if x >= duration_min:
+		y = 1 - np.exp(- 5 / (duration_max - duration_min) * (x - duration_min))
 	else:
 		y = 0
 	return y
 
-def func_sleeping_bedtime(x, bedtime_min, bedtime_max, reward):
+# Mathematical expression for bedtime of sleeping
+def func_sleeping_bedtime(x, bedtime_min, bedtime_max):
 	# bedtime_min ∈ [21, 24] -> earliest time to go to bed: 21:00-24:00
 	# bedtime_max ∈ [0, 4] -> latest time to go to bed: 0:00-4:00
 	# e.g.: min = 22, max = 4
 	if bedtime_min <= x <= 24:
-		y = reward * np.exp(-(x - bedtime_min))
+		y = np.exp(-(x - bedtime_min))
 	elif 0 <= x <= bedtime_max:
-		y = reward * np.exp(-(x + 24 - bedtime_min))
+		y = np.exp(-(x + 24 - bedtime_min))
 	else:
 		y = 0
 	return y
 
+# Reward function of sleeping
 def rwd_sleeping(bedtime, duration, sleeping, strictness, T = T):
 	# Given: dict "sleeping" from yaml file
 	# sleeping.keys(): duration_min, duration_max, bedtime_min, bedtime_max, enjoyment, productivity
@@ -228,8 +250,8 @@ def rwd_sleeping(bedtime, duration, sleeping, strictness, T = T):
 
 	# Steps:
 	# 1. check if the type is 'sleeping'
-	# 2. duration dependent function: rwd1(t_d) = reward(1-exp(-0.8(t_d-duration_min))) (duration_min <= t_d <= duration_max)
-	# 3. bedtime dependent function: rwd2(t_b) = reward*exp(-(t_b-bedtime_min)) (bedtime_min <= t_b <= bedtime_max + 24)
+	# 2. duration dependent function: rwd1(t_d) = reward * (1-exp(-0.8(t_d-duration_min))) (duration_min <= t_d <= duration_max)
+	# 3. bedtime dependent function: rwd2(t_b) = reward * exp(-(t_b-bedtime_min)) (bedtime_min <= t_b <= bedtime_max + 24)
 	# 4. final reward: rwd(t_d, t_b) = sqrt(rwd1(t_d)*rwd(t_b))
 	if sleeping["type"] == "sleeping":
 		duration_min = sleeping["duration_min"]
@@ -238,13 +260,13 @@ def rwd_sleeping(bedtime, duration, sleeping, strictness, T = T):
 		bedtime_max = sleeping["bedtime_max"]
 		reward = rwd_after_strict(strictness, sleeping["enjoyment"], sleeping["productivity"])
 		
-		rwd = np.sqrt(func_sleeping_duration(duration, duration_min, duration_max, reward) * func_sleeping_bedtime(bedtime, bedtime_min, bedtime_max, reward))
+		rwd = reward * np.sqrt(func_sleeping_duration(duration, duration_min, duration_max) * func_sleeping_bedtime(bedtime, bedtime_min, bedtime_max))
 
 		return rwd
 	else:
 		raise Exception("Current task is not 'sleeping'")
 
-# Contineous reward value in the contineous time space
+# Contineous reward value in the contineous time space, for all tasks
 def reward_contineous(x, task, strictness):
 	# x: time slot (different definition for different task)
 	try:
@@ -270,7 +292,7 @@ def reward_contineous(x, task, strictness):
 		raise Exception("Current task has undefined 'type'")
 	return y
 
-# Discrete reward (enjoyment & productivity) value over time period T
+# Discrete reward (enjoyment & productivity) value over time period T, based on reward functinos in continuous time for all tasks
 def reward_discrete(t, task, strictness, T = T):
 	# Given: task is a dict, different "type" has different (contineous) reward function 
 	# Return: average reward over time (t, t + T)
@@ -285,27 +307,6 @@ def reward_discrete(t, task, strictness, T = T):
 	rwd = rwd / (T * 60)
 	return rwd
 
-# # For rwd func test and debug
-# lab={"type":"as_soon_as_possible", "approx_time": 2, "enjoyment": 6, "productivity": 6}
-sleeping={"type":"sleeping","duration_min":5,"duration_max":12,"bedtime_min":22,"bedtime_max":4,"enjoyment":6,"productivity":2}
-x=np.linspace(0,24,100)
-y=[]
-for eachx in x:
-	y.append(func_sleeping_bedtime(eachx,22,4,5))
-y=np.array(y)
-# # plt.plot([0,1.4*approx_time],[reward,reward/2],'bo')
-# plt.plot(x,y,'r.')
-# plt.plot(x,y,'r-')
-# y=[]
-# for eachx in x:
-# 	y.append(reward_discrete(eachx, lab, 0.5))
-# y=np.array(y)
-# # plt.plot([0,1.4*approx_time],[reward,reward/2],'bo')
-# # plt.plot(x,y,'bo')
-# plt.plot(x,y,'b-')
-# # # plt.ylim([0,reward])
-# plt.show()
-
 # Policy 1: naive, calculate every possibilities for every T 
 def policy_naive(tasks):
 	pass
@@ -313,6 +314,22 @@ def policy_naive(tasks):
 # Visualize output result
 def output(plan):
 	pass
+
+
+
+
+# # Tests
+# # For rwd func test and debug
+# lab={"type":"as_soon_as_possible", "approx_time": 2, "enjoyment": 6, "productivity": 6}
+sleeping={"type":"sleeping","duration_min":5,"duration_max":12,"bedtime_min":22,"bedtime_max":4,"enjoyment":6,"productivity":2}
+# x=np.linspace(0,15,100)
+# y=[]
+# for eachx in x:
+# 	y.append(func_sleeping_duration(eachx,5,12))
+# y=np.array(y)
+# plt.show()
+
+
 
 # # For input test and debug
 # todolist = input()
