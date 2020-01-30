@@ -197,12 +197,20 @@ def findfunc_necessity(high, low, epsilon = 0.01):
 def func_necessity(x, time, relaxation = 1):
 	# x: exact time of the day [0, 24)
 	# time: type: list; may have param number of 0, 1, 2
-	if len(time) == 0:		# no time limit, rwd = constant, regardless of x
+	if len(time) == 0:		# No time limit, rwd = constant, regardless of x
 		y = 1
-	elif len(time) == 1 or len(time) == 2:	# have an optimal time point or time period, relaxation time = 2h
+	elif len(time) == 1:	# Have an optimal time point, relaxation time = 2h
 		alpha1, gamma1 = findfunc_necessity(time[0], time[0] - relaxation)
-		alpha2, gamma2 = findfunc_necessity(time[-1], time[-1] + relaxation)
+		alpha2, gamma2 = findfunc_necessity(time[0], time[0] + relaxation)
 		y = logisticSigmoid((x - alpha1) / gamma1) + logisticSigmoid((x - alpha2) / gamma2) - 1
+		# Normalization (make sure when x = time[0], y = 1)
+		y_max = logisticSigmoid((time[0] - alpha1) / gamma1) + logisticSigmoid((time[0] - alpha2) / gamma2) - 1
+		y = y / y_max
+	elif len(time) == 2:	# Have an optimal time period, relaxation time = 2h
+		alpha1, gamma1 = findfunc_necessity(time[0], time[0] - relaxation)
+		alpha2, gamma2 = findfunc_necessity(time[1], time[1] + relaxation)
+		y = logisticSigmoid((x - alpha1) / gamma1) + logisticSigmoid((x - alpha2) / gamma2) - 1
+		# Normally don't need normalization because exponential function almost always naturally makes sure during [time], y = 1
 	else:
 		raise Exception("Wrong input of 'time' for necessity task")
 	return y
@@ -213,7 +221,6 @@ def rwd_necessity(x, task, strictness):
 	# task.keys(): type, time, duration, enjoyment, productivity
 	if task["type"] == "necessity":
 		time = task["time"]
-		duration = task["duration"]
 		reward = rwd_after_strict(strictness, task["enjoyment"], task["productivity"])
 
 		if 0 <= x < 24:
@@ -352,10 +359,11 @@ def output(plan):
 # # For rwd func test and debug
 # lab={"type":"as_soon_as_possible", "approx_time": 2, "enjoyment": 6, "productivity": 6}
 # sleeping={"type":"sleeping","duration_min":5,"duration_max":12,"bedtime_min":22,"bedtime_max":4,"enjoyment":6,"productivity":2}
+# house={"type":"necessity","time":[17,18],"duration":0.75,"enjoyment":0,"productivity":10}
 # x=np.linspace(10,20,100)
 # y=[]
 # for eachx in x:
-# 	y.append(func_necessity(eachx,[14,16],3))
+# 	y.append(rwd_necessity(eachx,house,0.5))
 # y=np.array(y)
 # plt.plot(x,y)
 # plt.show()
