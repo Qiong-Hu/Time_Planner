@@ -4,6 +4,7 @@ today:                  # better to use for the next day and more than one day
     strictness: 0.5     # 0-1 for balance between enjoyment and productivity
 
 sleeping:
+    name: sleeping
     type: sleeping
     duration_min: 5     # sleeping duration: 5-12 hours
     duration_max: 12
@@ -15,6 +16,7 @@ sleeping:
                         # multiply by productivity of other tasks
 
 lecture:                # can be renamed to "lecture 1, 2, 3"etc, or the name of the lectuure
+    name: lecture
     type: fixed_time    # e.g.: lectures, mandetory commitments, appointments
     day:                # 1-7 for Mon.-Sun.
         - 2             # have classes on Tue. and Thu.
@@ -26,6 +28,7 @@ lecture:                # can be renamed to "lecture 1, 2, 3"etc, or the name of
     productivity: 8     # 0-10, float, the larger, the more important
 
 hw:
+    name: hw
     type: fixed_ddl     # e.g.: homework, assignments, paper due, preparation for exams
     approx_time: 3      # approximate required time: 3 hours, extended by certain percentage (like 40%) in the main planner function
     deadline: 10        # deadline in 10 hours
@@ -34,6 +37,7 @@ hw:
     productivity: 5     # 0-10, float, the larger, the more important
 
 lab:
+    name: lab
     type: as_soon_as_possible   # e.g.: reading emails, application
     approx_time: 2      # approximate required time: 2 hours, extended by certain percentage (like 40%) in the main planner function
     switch: 0.2         # switch time: 12 minutes, from deciding to do to actually begin to work
@@ -41,11 +45,13 @@ lab:
     productivity: 6     # 0-10, float, the larger, the more important
 
 film:
+    name: film
     type: fun           # e.g.: entertainments, reading, writing, shopping, films, social
     enjoyment: 7        # 0-10, float
     productivity: 1     # 0-10, float
 
 exercise:
+    name: exercise
     type: long_term     # e.g.: exercise, language, musical instrument
     insist_day: 2       # insisted for 2 days, update every time of imiplementation
     duration_max: 1.5   # maximum duration time for one day: 1.5h
@@ -53,6 +59,7 @@ exercise:
     productivity: 3     # 0-10, float
 
 housekeeping:
+    name: housekeeping
     type: necessity     # e.g.: housekeeping, showering, brushing teeth, cooking
     time: []            # preferred time for the activity: if empty then anytime is ok, if has 1 param then it's the optimal, if has 2 param then during the period is the optimal
     duration: 0.75      # 45 mins
@@ -60,6 +67,7 @@ housekeeping:
     productivity: 10    # 0-10, float; 10 means mandetory, schedule this tasks first
 
 breakfast:
+    name: breakfast
     type: meal
     time: [7, 10]       # breakfast at 7:00-10:00
     duration: 0.33      # 20 mins
@@ -67,6 +75,7 @@ breakfast:
     productivity: 0     # 0-10, float
 
 lunch:
+    name: lunch
     type: meal
     time: [11, 14]      # lunch at 11:00-14:00
     duration: 0.5       # 0.5 hours
@@ -74,6 +83,7 @@ lunch:
     productivity: 0     # 0-10, float
 
 dinner:
+    name: dinner
     type: meal
     time: [17, 20]      # dinner at 17:00-20:00
     duration: 1         # 1 hour, not including cooking (cooking is necessity)

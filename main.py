@@ -25,7 +25,7 @@ T = 1               # Discrete time sampling window length
 approx_err = 1.4    # Procrastination time percentage based on approx_time
 
 # Read input parameters from YAML file, default filename: 'todo.yaml'
-def inputYAML(filename = 'todolist2.yaml'):
+def inputYAML(filename = 'todolist.yaml'):
     # Return a dictionary of potential tasks with input parameters
     if os.path.isfile(filename):
         file = open(filename)
@@ -33,7 +33,7 @@ def inputYAML(filename = 'todolist2.yaml'):
         file.close()
         return tasks
     else:
-        raise Exception("Can't find file '" + filename + "'")
+        raise Exception("Can't find the file '" + filename + "'")
 
 # Combined rewards of enjoyment and productivity after weighted ratio "strictness"
 def rwd_after_strict(strictness, enjoyment, productivity):
@@ -269,7 +269,7 @@ def func_sleeping_duration(x, duration_min, duration_max):
     # e.g.: min = 5, max = 12
     # the parameter 5/(max-min) makes sure when x>=max, 0.99 <= y <= 1 (saturation)
     if x >= duration_min:
-        y = 1 - np.exp(- 5 / (duration_max - duration_min) * (x - duration_min))
+        y = 1 - np.exp(-5 / (duration_max - duration_min) * (x - duration_min))
     else:
         y = 0
     return y
@@ -309,7 +309,7 @@ def rwd_sleeping(bedtime, duration, sleeping, strictness, T = T):
 
         return rwd
     else:
-        raise Exception("Current task is not 'sleeping'")
+        raise Exception("Wrong reward function for non-sleeping task")
 
 # Contineous reward value in the contineous time space, for all tasks
 def reward_contineous(x, task, strictness):
@@ -317,7 +317,7 @@ def reward_contineous(x, task, strictness):
     try:
         task_type = task["type"]
     except:
-        raise Exception("Current task does not have input 'type'")
+        raise Exception("Task " + task['name'] + " does not have input 'type'")
 
     if task_type == "fixed_time":
         y = rwd_fixed_time(x, task, strictness)     # x: current time
@@ -386,6 +386,7 @@ def output(plan):
 
 # # For input test and debug
 todolist = inputYAML()
-# print(todolist)
+# reward_contineous(10,todolist['dinner'],0.5)
+# print(todolist['dinner'])
 # print(len(todolist))
 
