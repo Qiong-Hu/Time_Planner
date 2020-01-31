@@ -369,9 +369,14 @@ def policy_naive(tasks):
     pass
 
 # Visualize output result
-def visualize_plan(plan):
+def visualize_plan(plan, ax):
     # plan: type: dict, keys: task name, same as input file; each task: also dict, keys: 'time', 'rwd'; 'time': list, the beginning and ending hour of the day, 'rwd': discrete current reward corresponding discrete time period
     # E.g.: plan={'sleep': {'time': [0, 6], 'rwd':[1, 2, 3, 4, 5, 4]}, 'breakfast': {'time': [6, 8], 'rwd': [2, 3]}}
+
+    title_font = {'fontname': 'Arial', 'fontsize': 14, 'color': 'black', 'weight': 'bold', 'va': 'bottom'}
+    axis_font = {'fontname': 'Arial', 'fontsize': 12, 'color': 'black', 'weight': 'normal'}
+    text_font = {'fontname': 'Arial', 'fontsize': 12, 'weight': 'normal', 'ha': 'center', 'va': 'center'}
+
     if len(plan) == 0:
         raise Exception("Empty plan for visualization")
 
@@ -379,29 +384,67 @@ def visualize_plan(plan):
     # For init
     x = [0]
     y = [0]
+    x_max = 0
+    y_max = 0
+
+    # Iterate all the tasks in the plan
     for task in plan:
         # Assume all the 'task's in 'plan' follows the time order for now => TODO
         time = plan[task]['time']
         rwd = plan[task]['rwd']
+        name = todolist[task]['name']
 
         # To plot lines that are all connected
         x = [x[-1]]
         y = [y[-1]]
-        # Remove the init (0, 0)
+
+        # The first segment of plot
         if x[0] == 0 and y[0] == 0:
             x.remove(x[0])
             y.remove(y[0])
 
-        x.extend(np.linspace(time[0], time[1], round((time[1] - time[0]) / T) + 1)[:-1])
-        y.extend(rwd)
-        plt.plot(x, y)
-    plt.show()
+            x.extend(np.linspace(time[0], time[1], round((time[1] - time[0]) / T) + 1)[:-1])
+            y.extend(rwd)
+            p = ax.plot(x, y, '.-')
+            color = p[0].get_color()
+        else:
+            x.extend(np.linspace(time[0], time[1], round((time[1] - time[0]) / T) + 1)[:-1])
+            y.extend(rwd)
+            ax.plot(x[:2], y[:2], '.-', color = color)
+            p = ax.plot(x[1:], y[1:], '.-')
+            color = p[0].get_color()
+
+        ax.text((time[0] + time[1]) / 2, np.max(y) + 0.5, name, color = color, **text_font)
+
+        x_max = max(x_max, np.max(x))
+        y_max = max(y_max, np.max(y))
+
+    # Add axes
+    # ax.set_xlim(-0.5, 24.5)
+    ax.set_ylim(0, 10)
+    ax.set_xticks(np.linspace(0, x_max, int(x_max / T + 1)))
+    ax.set_yticks(np.linspace(0, 10, 11))
+    xlabels=[]
+    for i in range(24):
+        xlabels.append(str(int(i))+":00" )
+    ax.set_xticklabels(xlabels, rotation = -45)
+
+    ax.grid(alpha=0.5, linestyle='dashed', linewidth=0.5)
+
+    # Add plot labels
+    ax.set_title('Time Schedule Planner', **title_font)
+    ax.set_xlabel('Time', **axis_font)
+    ax.set_ylabel('Reward Value', **axis_font)
+
 
 
 todolist = inputYAML()
-plan={'sleep':{'time':[0,6],'rwd':[1,2,3,4,5,5]},'breakfast':{'time':[6,8],'rwd':[2,3]},'fun':{'time':[8,14],'rwd':[5,2,7,9,1,5]}}
-visualize_plan(plan)
+plan={'sleeping':{'time':[0,6],'rwd':[1,2,3,4,5,5]},'breakfast':{'time':[6,8],'rwd':[2,3]},'film':{'time':[8,14],'rwd':[5,2,7,9,1,5]}}
 
+fig, ax = plt.subplots(dpi = 100)
+visualize_plan(plan, ax)
+plt.show()
+# fig.savefig("planner.png", dpi = 200)
 
 
 # # For input test and debug
