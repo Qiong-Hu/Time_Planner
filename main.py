@@ -287,9 +287,16 @@ def func_sleeping_bedtime(x, bedtime_min, bedtime_max):
         y = 0
     return y
 
+# Mathematical expression for deep sleeping cycle
+def func_sleeping_cycle(x):
+    # x: time of sleeping since bedtime, unit: hour
+    # TODO
+    pass
+
 # Reward function of sleeping
-def rwd_sleeping(bedtime, duration, sleeping, strictness, T = T):
+def rwd_sleeping(x, bedtime, duration, sleeping, strictness, T = T):
     # Given: dict "sleeping" from yaml file
+    # x: current real time
     # sleeping.keys(): duration_min, duration_max, bedtime_min, bedtime_max, enjoyment, productivity
     # Return: reward value, based on (bedtime, duration) pair, "reward" is 3D function of both bedtime and duration
 
@@ -305,8 +312,7 @@ def rwd_sleeping(bedtime, duration, sleeping, strictness, T = T):
         bedtime_max = sleeping["bedtime_max"]
         reward = rwd_after_strict(strictness, sleeping["enjoyment"], sleeping["productivity"])
         
-        rwd = reward * np.sqrt(func_sleeping_duration(duration, duration_min, duration_max) * func_sleeping_bedtime(bedtime, bedtime_min, bedtime_max))
-
+        rwd = reward * np.sqrt(func_sleeping_duration(duration, duration_min, duration_max) * func_sleeping_bedtime(bedtime, bedtime_min, bedtime_max))   # TODO (future work): * func_sleeping_cycle(x)
         return rwd
     else:
         raise Exception("Wrong reward function for non-sleeping task")
@@ -317,7 +323,7 @@ def reward_contineous(x, task, strictness):
     try:
         task_type = task["type"]
     except:
-        raise Exception("Task " + task['name'] + " does not have input 'type'")
+        raise Exception("Task '" + task["name"] + "' does not have input 'type'")
 
     if task_type == "fixed_time":
         y = rwd_fixed_time(x, task, strictness)     # x: current time
@@ -334,7 +340,7 @@ def reward_contineous(x, task, strictness):
     elif task_type == "meal":
         y = rwd_meal(x, task, strictness)           # x: current time
     else:
-        raise Exception("Current task has undefined 'type' for continuous reward")
+        raise Exception("Task '" + task["name"] + "' has undefined 'type' for continuous reward")
     return y
 
 # Discrete reward (enjoyment & productivity) value over time period T, based on reward functinos in continuous time for all tasks
@@ -363,11 +369,47 @@ def policy_naive(tasks):
     pass
 
 # Visualize output result
-def output(plan):
-    pass
+def visualize_plan(plan):
+    # plan: type: dict, keys: task name, same as input file; each task: also dict, keys: 'time', 'rwd'; 'time': list, the beginning and ending hour of the day, 'rwd': discrete current reward corresponding discrete time period
+    # E.g.: plan={'sleep': {'time': [0, 6], 'rwd':[1, 2, 3, 4, 5, 4]}, 'breakfast': {'time': [6, 8], 'rwd': [2, 3]}}
+    if len(plan) == 0:
+        raise Exception("Empty plan for visualization")
+
+    # x, y: horizontal, vertical axes for the rwd-time output plot
+    # For init
+    x = [0]
+    y = [0]
+    for task in plan:
+        # Assume all the 'task's in 'plan' follows the time order for now => TODO
+        time = plan[task]['time']
+        rwd = plan[task]['rwd']
+
+        # To plot lines that are all connected
+        x = [x[-1]]
+        y = [y[-1]]
+        # Remove the init (0, 0)
+        if x[0] == 0 and y[0] == 0:
+            x.remove(x[0])
+            y.remove(y[0])
+
+        x.extend(np.linspace(time[0], time[1], round((time[1] - time[0]) / T) + 1)[:-1])
+        y.extend(rwd)
+        plt.plot(x, y)
+    plt.show()
+
+
+todolist = inputYAML()
+plan={'sleep':{'time':[0,6],'rwd':[1,2,3,4,5,5]},'breakfast':{'time':[6,8],'rwd':[2,3]},'fun':{'time':[8,14],'rwd':[5,2,7,9,1,5]}}
+visualize_plan(plan)
 
 
 
+# # For input test and debug
+# todolist = inputYAML()
+# reward_contineous(10,todolist['dinner'],0.5)
+# print(todolist)
+# print(todolist['dinner'])
+# print(len(todolist))
 
 # # Tests
 # # For rwd func test and debug
@@ -381,12 +423,4 @@ def output(plan):
 # y=np.array(y)
 # plt.plot(x,y,"r")
 # plt.show()
-
-
-
-# # For input test and debug
-todolist = inputYAML()
-# reward_contineous(10,todolist['dinner'],0.5)
-# print(todolist['dinner'])
-# print(len(todolist))
 
