@@ -441,10 +441,11 @@ def visualize_plan(plan, ax):
 todolist = inputYAML()
 plan={'sleeping':{'time':[0,6],'rwd':[1,2,3,4,5,5]},'breakfast':{'time':[6,8],'rwd':[2,3]},'film':{'time':[8,14],'rwd':[5,2,7,9,1,5]}}
 
-fig, ax = plt.subplots(dpi = 200)
+fig, ax = plt.subplots(dpi = 100)
 visualize_plan(plan, ax)
-# plt.show()
-fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
+plt.tight_layout()
+plt.show()
+# fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
 
 
 # # For input test and debug
