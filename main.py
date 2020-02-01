@@ -424,12 +424,12 @@ def visualize_plan(plan, ax):
     ax.set_ylim(0, 10)
     ax.set_xticks(np.linspace(0, x_max, int(x_max / T + 1)))
     ax.set_yticks(np.linspace(0, 10, 11))
-    xlabels=[]
+    xlabels = []
     for i in range(24):
-        xlabels.append(str(int(i))+":00" )
+        xlabels.append(str(int(i)) + ":00" )
     ax.set_xticklabels(xlabels, rotation = -45)
 
-    ax.grid(alpha=0.5, linestyle='dashed', linewidth=0.5)
+    ax.grid(alpha = 0.5, linestyle = 'dashed', linewidth = 0.5)
 
     # Add plot labels
     ax.set_title('Time Schedule Planner', **title_font)
@@ -444,7 +444,7 @@ plan={'sleeping':{'time':[0,6],'rwd':[1,2,3,4,5,5]},'breakfast':{'time':[6,8],'r
 fig, ax = plt.subplots(dpi = 100)
 visualize_plan(plan, ax)
 plt.show()
-# fig.savefig("planner.png", dpi = 200)
+fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
 
 
 # # For input test and debug
