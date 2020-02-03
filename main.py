@@ -370,8 +370,8 @@ def input_analysis(tasks):
     # Return: task_name list
     task_names = list(tasks.keys())
 
-    # Check validity of task params: check all necessary params are provided in the input file
-    param = {'today': {'curr_time', 'day', 'strictness'}, \
+    # Check validity of task params
+    param = {'today': {'name', 'type', 'curr_time', 'day', 'strictness'}, \
              'sleeping': {'name', 'type', 'duration_min', 'duration_max', 'bedtime_min', 'bedtime_max', 'enjoyment', 'productivity'}, \
              'fixed_time': {'name', 'type', 'day', 'start', 'duration', 'switch', 'enjoyment', 'productivity'}, \
              'fixed_ddl': {'name', 'type', 'approx_time', 'deadline', 'switch', 'enjoyment', 'productivity'}, \
@@ -381,16 +381,20 @@ def input_analysis(tasks):
              'necessity': {'name', 'type', 'time', 'duration', 'enjoyment', 'productivity'}, \
              'meal': {'name', 'type', 'time', 'duration', 'enjoyment', 'productivity'}}
     wrong_param = []
+
+    # Check Task 'today' and 'sleeping' are provided
+    diff = set(['today', 'sleeping']).difference(set(task_names))
+    if diff != set():
+        print("Inputs has missing Task " + str(diff) + "!")
+
+    # Check all necessary parameters for given tasks are provided in the input file
     for task_name in task_names:
-        if task_name == "today":
-            diff = param[task_name].difference(set(tasks[task_name].keys()))
-        else:
-            try:
-                diff = param[tasks[task_name]["type"]].difference(set(tasks[task_name].keys()))
-            except Exception as e:
-                print("Task '" + task_name + "' has missing parameter {'type'}!")
-                wrong_param.append(task_name)
-                continue
+        try:
+            diff = param[tasks[task_name]["type"]].difference(set(tasks[task_name].keys()))
+        except Exception as e:
+            print("Task '" + task_name + "' has missing or undefined {'type'}!")
+            wrong_param.append(task_name)
+            continue
         
         if diff != set():
             print("Task '" + task_name + "' has missing parameter " + str(diff) + "!")
@@ -401,8 +405,12 @@ def input_analysis(tasks):
 
     return task_names
 
-# Policy 1: naive, calculate every possibilities for every T 
+# Policy 1: naive, randomly distribute any task for any T
 def policy_naive(tasks):
+    pass
+
+# Policy 2: traversal, calculate all possibilities for every T 
+def policy_traversal(tasks):
     pass
 
 # Visualize output result
@@ -482,11 +490,10 @@ tasks = inputYAML()
 # print(tasks['dinner'])
 # print(len(tasks))
 
-task_names = input_analysis(tasks)
 
 # # For policy test
-
-
+task_names = input_analysis(tasks)
+# policy_naive(tasks)
 
 
 
