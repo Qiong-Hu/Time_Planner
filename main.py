@@ -364,14 +364,51 @@ def reward_discrete(n, task, strictness, detailed = True, T = T):
     rwd = rwd / count
     return rwd
 
+# Return task list from input 'tasks' dict, and check task validity
+def input_analysis(tasks):
+    # Given: dict of {task_name: task_content}
+    # Return: task_name list
+    task_names = list(tasks.keys())
+
+    # Check validity of task params: check all necessary params are provided in the input file
+    param = {'today': {'curr_time', 'day', 'strictness'}, \
+             'sleeping': {'name', 'type', 'duration_min', 'duration_max', 'bedtime_min', 'bedtime_max', 'enjoyment', 'productivity'}, \
+             'fixed_time': {'name', 'type', 'day', 'start', 'duration', 'switch', 'enjoyment', 'productivity'}, \
+             'fixed_ddl': {'name', 'type', 'approx_time', 'deadline', 'switch', 'enjoyment', 'productivity'}, \
+             'as_soon_as_possible': {'name', 'type', 'approx_time', 'switch', 'enjoyment', 'productivity'}, \
+             'fun': {'name', 'type', 'enjoyment', 'productivity'}, \
+             'long_term': {'name', 'type', 'insist_day', 'duration_max', 'enjoyment', 'productivity'}, \
+             'necessity': {'name', 'type', 'time', 'duration', 'enjoyment', 'productivity'}, \
+             'meal': {'name', 'type', 'time', 'duration', 'enjoyment', 'productivity'}}
+    wrong_param = []
+    for task_name in task_names:
+        if task_name == "today":
+            diff = param[task_name].difference(set(tasks[task_name].keys()))
+        else:
+            try:
+                diff = param[tasks[task_name]["type"]].difference(set(tasks[task_name].keys()))
+            except Exception as e:
+                print("Task '" + task_name + "' has missing parameter {'type'}!")
+                wrong_param.append(task_name)
+                continue
+        
+        if diff != set():
+            print("Task '" + task_name + "' has missing parameter " + str(diff) + "!")
+            wrong_param.append(task_name)
+
+    if len(wrong_param) != 0:
+        raise Exception("Check inputs of " + str(set(wrong_param)) + " and try again!")
+
+    return task_names
+
 # Policy 1: naive, calculate every possibilities for every T 
 def policy_naive(tasks):
     pass
 
 # Visualize output result
+# E.g.: plan={'sleep': {'time': [0, 6], 'rwd':[1, 2, 3, 4, 5, 4]}, 'breakfast': {'time': [6, 8], 'rwd': [2, 3]}}
 def visualize_plan(plan, ax):
     # plan: type: dict, keys: task name, same as input file; each task: also dict, keys: 'time', 'rwd'; 'time': list, the beginning and ending hour of the day, 'rwd': discrete current reward corresponding discrete time period
-    # E.g.: plan={'sleep': {'time': [0, 6], 'rwd':[1, 2, 3, 4, 5, 4]}, 'breakfast': {'time': [6, 8], 'rwd': [2, 3]}}
 
     title_font = {'fontname': 'Arial', 'fontsize': 14, 'color': 'black', 'weight': 'bold', 'va': 'bottom'}
     axis_font = {'fontname': 'Arial', 'fontsize': 12, 'color': 'black', 'weight': 'normal'}
@@ -424,9 +461,7 @@ def visualize_plan(plan, ax):
     ax.set_ylim(0, 10)
     ax.set_xticks(np.linspace(0, x_max, int(x_max / T + 1)))
     ax.set_yticks(np.linspace(0, 10, 11))
-    xlabels = []
-    for i in range(24):
-        xlabels.append(str(int(i)) + ":00" )
+    xlabels = [str(int(i) % 24) + ":00" for i in range(25)]
     ax.set_xticklabels(xlabels, rotation = -45)
 
     ax.grid(alpha = 0.5, linestyle = 'dashed', linewidth = 0.5)
@@ -438,24 +473,23 @@ def visualize_plan(plan, ax):
 
 
 
-todolist = inputYAML()
-plan={'sleeping':{'time':[0,6],'rwd':[1,2,3,4,5,5]},'breakfast':{'time':[6,8],'rwd':[2,3]},'film':{'time':[8,14],'rwd':[5,2,7,9,1,5]}}
-
-fig, ax = plt.subplots(dpi = 100)
-visualize_plan(plan, ax)
-plt.tight_layout()
-plt.show()
-# fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
-
-
-# # For input test and debug
-# todolist = inputYAML()
-# reward_contineous(10,todolist['dinner'],0.5)
-# print(todolist)
-# print(todolist['dinner'])
-# print(len(todolist))
 
 # # Tests
+# # For input test and debug
+tasks = inputYAML()
+# reward_contineous(10,tasks['dinner'],0.5)
+# print(tasks)
+# print(tasks['dinner'])
+# print(len(tasks))
+
+task_names = input_analysis(tasks)
+
+# # For policy test
+
+
+
+
+
 # # For rwd func test and debug
 # lab={"type":"as_soon_as_possible", "approx_time": 2, "enjoyment": 6, "productivity": 6}
 # sleeping={"type":"sleeping","duration_min":5,"duration_max":12,"bedtime_min":22,"bedtime_max":4,"enjoyment":6,"productivity":2}
@@ -468,3 +502,10 @@ plt.show()
 # plt.plot(x,y,"r")
 # plt.show()
 
+# # For output
+# plan={'sleeping':{'time':[0,6],'rwd':[1,2,3,4,5,5]},'breakfast':{'time':[6,8],'rwd':[2,3]},'film':{'time':[8,14],'rwd':[5,2,7,9,1,5]}}
+# fig, ax = plt.subplots(dpi = 100)
+# visualize_plan(plan, ax)
+# plt.tight_layout()
+# plt.show()
+# # fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
