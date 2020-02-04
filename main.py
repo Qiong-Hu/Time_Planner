@@ -175,6 +175,7 @@ def rwd_long_term(x, task, strictness, lamda = 0.7):
     # task.keys(): type, insist_day, duration_max, enjoyment, productivity
     if task["type"] == "long_term":
         insist_day = task["insist_day"]
+        duration_max = task["duration_max"]
         reward = rwd_after_strict(strictness, task["enjoyment"], task["productivity"])
 
         if x >= 0:
@@ -333,7 +334,7 @@ def reward_contineous(x, task, strictness):
     elif task_type == "as_soon_as_possible":
         y = rwd_asap(x, task, strictness)           # x: time passed since beginning
     elif task_type == "fun":
-        y = rwd_fun(x, task, strictness)            # x: whichever def
+        y = rwd_fun(x, task, strictness)            # x: current time
     elif task_type == "long_term":
         y = rwd_long_term(x, task, strictness)      # x: duration of the task
     elif task_type == "necessity":
@@ -383,11 +384,6 @@ def input_analysis(tasks):
              'meal': {'name', 'type', 'time', 'duration', 'enjoyment', 'productivity'}}
     wrong_param = []
 
-    # Check Task 'today' and 'sleeping' are provided
-    diff = set(['today', 'sleeping']).difference(set(task_names))
-    if diff != set():
-        print("Inputs has missing Task " + str(diff) + "!")
-
     # Check all necessary parameters for given tasks are provided in the input file
     for task_name in task_names:
         try:
@@ -401,10 +397,17 @@ def input_analysis(tasks):
             print("Task '" + task_name + "' has missing parameter " + str(diff) + "!")
             wrong_param.append(task_name)
 
+    # Check Task 'today' and 'sleeping' are provided
+    diff = set(['today', 'sleeping']).difference(set(task_names))
+    if diff != set():
+        print("Inputs has missing Task " + str(diff) + "!")
+    else:
+        task_names.remove('today')
+        task_names.remove('sleeping')        
+
     if len(wrong_param) != 0:
         raise Exception("Check inputs of " + str(set(wrong_param)) + " and try again!")
 
-    task_names.remove('today')
     return task_names
 
 # Only consider plan for tomorrow (for now => TODO: future extension for plan for the same day)
@@ -427,7 +430,7 @@ def policy_random(tasks):
     duration_list = np.arange(sleeping['duration_min'], sleeping['duration_max'] + T, T)
     bedtime = random.choice(bedtime_list)
     duration = random.choice(duration_list)
-    print(bedtime, duration)
+    print('bedtime: ' + str(np.mod(bedtime, 24)) + ':00\tduration: ' + str(duration) + 'h\tgetup time: ' + str(bedtime + duration) + ':00')
 
     # Sleep before 24:00
     if bedtime <= 0:
@@ -440,15 +443,33 @@ def policy_random(tasks):
         for x in np.arange(bedtime, bedtime + duration, T):
             plan['sleeping']['rwd'].append(rwd_sleeping(x, bedtime, duration, sleeping, strictness))
 
-    # Assume the daily plan is circulant
+    # Assume the daily plan is circulant (a.k.a. bedtime for the next day = bedtime of the planned day)
     if bedtime <= 0:
-        # Active time limited before 24:00
-        # TODO: after all the random tasks, add Task 'sleeping2'
+        # Active until before 24:00, then go to sleep (add another segment of sleeping)
         activetime = bedtime + 24
     else:
-        # Active time last until 24:00
+        # Active until 24:00
         activetime = 24
-    # TODO: add random tasks
+
+    # Add random tasks
+    for n in np.arange(np.ceil((bedtime + duration) / T), np.floor(activetime / T)):
+        task_curr = random.choice(task_names)
+        if task_curr not in plan.keys():
+            plan[task_curr] = {'time': [n * T, (n + 1) * T], 'rwd': [reward_discrete(n, tasks[task_curr], strictness)]}
+        else:
+            count = 1
+            for task_prev in plan.keys():
+                if task_curr == task_prev[:len(task_curr)]:
+                    count += 1
+            plan[task_curr + str(count)] = {'time': [n * T, (n + 1) * T], 'rwd': [reward_discrete(n, tasks[task_curr], strictness)]}
+
+    # After all the random tasks, add Task 'sleeping2' if bedtime before 24:00 => because circulant
+    if bedtime < 0:
+        plan['sleeping2'] = {'time': [bedtime + 24, 24], 'rwd': []}
+        for x in np.arange(bedtime + 24, 24, T):
+            plan['sleeping2']['rwd'].append(rwd_sleeping(x, bedtime, duration, sleeping, strictness))
+
+    print(plan)
     return plan
 
 # Policy 2: traversal, calculate all possibilities for every T 
@@ -485,13 +506,10 @@ def visualize_plan(plan, ax):
         y = [y[-1]]
 
         # The first segment of plot
-        if x[0] == 0 and y[0] == 0:
-            x.remove(x[0])
-            y.remove(y[0])
-
+        if task == list(plan.keys())[0]:
             x.extend(np.linspace(time[0], time[1], int(np.floor((time[1] - time[0]) / T)) + 1)[:-1])
             y.extend(rwd)
-            p = ax.plot(x, y, '.-')
+            p = ax.plot(x[1:], y[1:], '.-')
             color = p[0].get_color()
         else:
             x.extend(np.linspace(time[0], time[1], int(np.floor((time[1] - time[0]) / T)) + 1)[:-1])
@@ -499,23 +517,22 @@ def visualize_plan(plan, ax):
             ax.plot(x[:2], y[:2], '.-', color = color)
             p = ax.plot(x[1:], y[1:], '.-')
             color = p[0].get_color()
-
         # Plot the last segment
         if task == list(plan.keys())[-1]:
             x = [x[-1], x[-1] + T]
-            y = [y[-1], y[-1]]
+            y = [y[-1], plan[list(plan.keys())[0]]['rwd'][0]]
             ax.plot(x, y, '.-', color = color)
 
-        ax.text((time[0] + time[1]) / 2, np.max(y) + 0.5, task, color = color, **text_font)
+        ax.text((time[0] + time[1]) / 2, np.max(y[1:]) + 0.5, task, color = color, **text_font)
 
         x_max = max(x_max, np.max(x))
         y_max = max(y_max, np.max(y))
 
     # Add axes
-    # ax.set_xlim(-0.5, 24.5)
-    ax.set_ylim(0, 10)
+    ax.set_xlim(-0.5, 24.5)
+    ax.set_ylim(0, int(y_max + 0.5) + 1)
     ax.set_xticks(np.linspace(0, x_max, int(x_max / T + 1)))
-    ax.set_yticks(np.linspace(0, 10, 11))
+    ax.set_yticks(np.linspace(0, int(y_max + 0.5) + 1, int(y_max + 0.5) + 2))
     xlabels = [str(int(i) % 24) + ":00" for i in range(25)]
     ax.set_xticklabels(xlabels, rotation = -45)
 
@@ -541,7 +558,6 @@ tasks = inputYAML()
 # # For policy test
 task_names = input_analysis(tasks)
 plan = policy_random(tasks)
-print(plan)
 
 
 # # For rwd func test and debug
@@ -562,4 +578,4 @@ fig, ax = plt.subplots(dpi = 100)
 visualize_plan(plan, ax)
 plt.tight_layout()
 plt.show()
-# # fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
+# fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')

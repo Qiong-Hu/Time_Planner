@@ -33,7 +33,7 @@ hw:
     name: hw
     type: fixed_ddl     # e.g.: homework, assignments, paper due, preparation for exams
     approx_time: 3      # approximate required time: 3 hours, extended by certain percentage (like 40%) in the main planner function
-    deadline: 10        # deadline in 10 hours
+    deadline: 20        # deadline in 10 hours
     switch: 0.1         # switch time: 6 minutes; for preparation before hw, time to focus
     enjoyment: 1        # 0-10, float
     productivity: 5     # 0-10, float, the larger, the more important

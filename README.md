@@ -82,3 +82,4 @@ Therefore, for me, the parameters are: $dur_{min} = 5, dur_{max} = 12, bed_{min}
 
 #### Daily-necessity tasks
 
+![rwd func for necessity tasks](img/necessity.jpg)
