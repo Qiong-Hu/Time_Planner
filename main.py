@@ -249,6 +249,8 @@ def func_meal(x, l, r):
     # 3 parts of y represents: lower bound to middle, middle to upper bound, for normalization (so y=0 when x is far away)
     # Normalized (y_max = 1 for any x)
     y = pow(logisticSigmoid((x - l + 1) * 3), 3) + pow(logisticSigmoid((r - x) * 3), 3) - 1
+    if y < 0:
+        y = 0
     return y
 
 # Reward function of meals
@@ -433,15 +435,24 @@ def policy_random(tasks):
     print('bedtime: ' + str(np.mod(bedtime, 24)) + ':00\tduration: ' + str(duration) + 'h\tgetup time: ' + str(bedtime + duration) + ':00')
 
     # Sleep before 24:00
+    plan['sleeping'] = {'name': 'sleeping'}
     if bedtime <= 0:
-        plan['sleeping'] = {'time': [0, bedtime + duration], 'rwd': []}
+        plan['sleeping']['time'] = [0, bedtime + duration]
+        plan['sleeping']['rwd'] = []
         for x in np.arange(0, bedtime + duration, T):
             plan['sleeping']['rwd'].append(rwd_sleeping(x, np.mod(bedtime, 24), duration, sleeping, strictness))
     else:
-        plan['N/A'] = {'time': [0, bedtime], 'rwd': list(np.arange(0, bedtime, T) * 0)}
-        plan['sleeping'] = {'time': [bedtime, bedtime + duration], 'rwd': []}
+        plan['N/A'] = {'name': 'N/A', 'time': [0, bedtime], 'rwd': list(np.arange(0, bedtime, T) * 0)}
+        plan['sleeping']['time'] = [bedtime, bedtime + duration]
+        plan['sleeping']['rwd'] = []
         for x in np.arange(bedtime, bedtime + duration, T):
             plan['sleeping']['rwd'].append(rwd_sleeping(x, bedtime, duration, sleeping, strictness))
+
+    if bedtime < 0:
+        # Because circulant or symmetric
+        plan['sleeping2'] = {'name': 'sleeping', 'time': [bedtime + 24, 24], 'rwd': []}
+        for x in np.arange(bedtime + 24, 24, T):
+            plan['sleeping2']['rwd'].append(rwd_sleeping(x, bedtime, duration, sleeping, strictness))
 
     # Assume the daily plan is circulant (a.k.a. bedtime for the next day = bedtime of the planned day)
     if bedtime <= 0:
@@ -454,29 +465,54 @@ def policy_random(tasks):
     # Add random tasks
     for n in np.arange(np.ceil((bedtime + duration) / T), np.floor(activetime / T)):
         task_curr = random.choice(task_names)
-        if task_curr not in plan.keys():
-            plan[task_curr] = {'time': [n * T, (n + 1) * T], 'rwd': [reward_discrete(n, tasks[task_curr], strictness)]}
+        if tasks[task_curr]['type'] not in plan.keys():
+            plan[tasks[task_curr]['type']] = {'name': task_curr, 'time': [n * T, (n + 1) * T], 'rwd': [reward_discrete(n, tasks[task_curr], strictness)]}
         else:
-            count = 1
+            count = 0
             for task_prev in plan.keys():
-                if task_curr == task_prev[:len(task_curr)]:
+                if task_prev.strip('_') == tasks[task_curr]['type']:
                     count += 1
-            plan[task_curr + str(count)] = {'time': [n * T, (n + 1) * T], 'rwd': [reward_discrete(n, tasks[task_curr], strictness)]}
+            plan[tasks[task_curr]['type'] + count*'_'] = {'name': task_curr, 'time': [n * T, (n + 1) * T], 'rwd': [reward_discrete(n, tasks[task_curr], strictness)]}   
 
-    # After all the random tasks, add Task 'sleeping2' if bedtime before 24:00 => because circulant
-    if bedtime < 0:
-        plan['sleeping2'] = {'time': [bedtime + 24, 24], 'rwd': []}
-        for x in np.arange(bedtime + 24, 24, T):
-            plan['sleeping2']['rwd'].append(rwd_sleeping(x, bedtime, duration, sleeping, strictness))
-
-    print(plan)
+    print('Initial plan: ' + str(plan))
     return plan
 
 # Policy 2: traversal, calculate all possibilities for every T 
 def policy_traversal(tasks):
     pass
 
-# Visualize output result
+# Make the 'Initial plan' more neat: same continuous task in the same dict.key, all the tasks in the time order
+def plan_sort(plan):
+    newplan = {}
+    task_names = list(plan.keys())
+
+    # All the tasks in the same order
+    time_list = []
+    for task in task_names:
+        time_list.append(plan[task]['time'][0])
+    time_index = np.argsort(time_list)
+    task_names = list(np.array(task_names)[time_index])
+
+    # Same continuous task in the same key
+    newplan[task_names[0]] = plan[task_names[0]]
+    for i in range(1, len(plan)):
+        last_task = list(newplan.keys())[-1]
+        if task_names[i].strip('_') == last_task.strip('_') and plan[task_names[i]]['name'] == plan[last_task]['name']:
+            time_ori = newplan[last_task]['time']
+            time_new = plan[task_names[i]]['time']      # '_new': relative to 'newplan' reconstruction
+
+            if time_ori[1] == time_new[0]:
+                newplan[last_task]['time'] = [time_ori[0], time_new[1]]
+                newplan[last_task]['rwd'].extend(plan[task_names[i]]['rwd'])
+            else:
+                newplan[task_names[i]] = plan[task_names[i]]
+        else:
+            newplan[task_names[i]] = plan[task_names[i]]
+
+    print('Sorted plan: ' + str(newplan))
+    return newplan
+
+# Visualize resulting plan for output
 # E.g.: plan={'sleeping': {'time': [0, 6], 'rwd':[1, 2, 3, 4, 5, 4]}, 'breakfast': {'time': [6, 8], 'rwd': [2, 3]}}
 def visualize_plan(plan, ax):
     # plan: type: dict, keys: task name, same as input file; each task: also dict, keys: 'time', 'rwd'; 'time': list, the beginning and ending hour of the day, 'rwd': discrete current reward corresponding discrete time period
@@ -523,7 +559,7 @@ def visualize_plan(plan, ax):
             y = [y[-1], plan[list(plan.keys())[0]]['rwd'][0]]
             ax.plot(x, y, '.-', color = color)
 
-        ax.text((time[0] + time[1]) / 2, np.max(y[1:]) + 0.5, task, color = color, **text_font)
+        ax.text((time[0] + time[1]) / 2, np.max(y[1:]) + 0.5, plan[task]['name'], color = color, **text_font)
 
         x_max = max(x_max, np.max(x))
         y_max = max(y_max, np.max(y))
@@ -557,8 +593,28 @@ tasks = inputYAML()
 
 # # For policy test
 task_names = input_analysis(tasks)
-plan = policy_random(tasks)
-
+# plan = policy_random(tasks)
+plan = {\
+'N/A': {'name': 'N/A', 'time': [0, 3], 'rwd': [0, 0, 0]}, \
+'meal': {'name': 'breakfast', 'time': [9.0, 10.0], 'rwd': [0.7861605311854458]}, \
+'meal_': {'name': 'breakfast', 'time': [10.0, 11.0], 'rwd': [0.03504539628882263]}, \
+'as_soon_as_possible': {'name': 'lab', 'time': [11.0, 12.0], 'rwd': [0.319988811198889]}, \
+'fun': {'name': 'film', 'time': [12.0, 13.0], 'rwd': [4.0]}, \
+'fixed_time': {'name': 'lecture', 'time': [13.0, 14.0], 'rwd': [0.10655737704918032]}, \
+'fun_': {'name': 'film', 'time': [14.0, 15.0], 'rwd': [4.0]}, \
+'fun__': {'name': 'film', 'time': [15.0, 16.0], 'rwd': [4.0]}, \
+'fixed_time_': {'name': 'lecture', 'time': [16.0, 17.0], 'rwd': [0.10655737704918032]}, \
+'meal__': {'name': 'dinner', 'time': [17.0, 18.0], 'rwd': [1.9044327885415533]}, \
+'fixed_time__': {'name': 'lecture', 'time': [18.0, 19.0], 'rwd': [0.0]}, \
+'meal___': {'name': 'breakfast', 'time': [19.0, 20.0], 'rwd': [0.0]}, \
+'meal____': {'name': 'dinner', 'time': [20.0, 21.0], 'rwd': [0.04672719505176354]}, \
+'fixed_time___': {'name': 'lecture', 'time': [21.0, 22.0], 'rwd': [0.0]}, \
+'meal_____': {'name': 'lunch', 'time': [22.0, 23.0], 'rwd': [0.0]}, \
+'as_soon_as_possible_': {'name': 'lab', 'time': [23.0, 24.0], 'rwd': [0.10633305293129375]} \
+}
+plan = plan_sort(plan)
+for each in plan.keys():
+    print("'"+str(each)+"': "+str(plan[each])+', \\')
 
 # # For rwd func test and debug
 # lab={"type":"as_soon_as_possible", "approx_time": 2, "enjoyment": 6, "productivity": 6}
@@ -574,8 +630,8 @@ plan = policy_random(tasks)
 
 # # For output
 # plan={'sleeping':{'time':[0,6],'rwd':[1,2,3,4,5,5]},'breakfast':{'time':[6,8],'rwd':[2,3]},'film':{'time':[8,14],'rwd':[5,2,7,9,1,5]}}
-fig, ax = plt.subplots(dpi = 100)
-visualize_plan(plan, ax)
-plt.tight_layout()
-plt.show()
+# fig, ax = plt.subplots(dpi = 100)
+# visualize_plan(plan, ax)
+# plt.tight_layout()
+# plt.show()
 # fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
