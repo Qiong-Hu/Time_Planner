@@ -593,28 +593,9 @@ tasks = inputYAML()
 
 # # For policy test
 task_names = input_analysis(tasks)
-# plan = policy_random(tasks)
-plan = {\
-'N/A': {'name': 'N/A', 'time': [0, 3], 'rwd': [0, 0, 0]}, \
-'meal': {'name': 'breakfast', 'time': [9.0, 10.0], 'rwd': [0.7861605311854458]}, \
-'meal_': {'name': 'breakfast', 'time': [10.0, 11.0], 'rwd': [0.03504539628882263]}, \
-'as_soon_as_possible': {'name': 'lab', 'time': [11.0, 12.0], 'rwd': [0.319988811198889]}, \
-'fun': {'name': 'film', 'time': [12.0, 13.0], 'rwd': [4.0]}, \
-'fixed_time': {'name': 'lecture', 'time': [13.0, 14.0], 'rwd': [0.10655737704918032]}, \
-'fun_': {'name': 'film', 'time': [14.0, 15.0], 'rwd': [4.0]}, \
-'fun__': {'name': 'film', 'time': [15.0, 16.0], 'rwd': [4.0]}, \
-'fixed_time_': {'name': 'lecture', 'time': [16.0, 17.0], 'rwd': [0.10655737704918032]}, \
-'meal__': {'name': 'dinner', 'time': [17.0, 18.0], 'rwd': [1.9044327885415533]}, \
-'fixed_time__': {'name': 'lecture', 'time': [18.0, 19.0], 'rwd': [0.0]}, \
-'meal___': {'name': 'breakfast', 'time': [19.0, 20.0], 'rwd': [0.0]}, \
-'meal____': {'name': 'dinner', 'time': [20.0, 21.0], 'rwd': [0.04672719505176354]}, \
-'fixed_time___': {'name': 'lecture', 'time': [21.0, 22.0], 'rwd': [0.0]}, \
-'meal_____': {'name': 'lunch', 'time': [22.0, 23.0], 'rwd': [0.0]}, \
-'as_soon_as_possible_': {'name': 'lab', 'time': [23.0, 24.0], 'rwd': [0.10633305293129375]} \
-}
+plan = policy_random(tasks)
 plan = plan_sort(plan)
-for each in plan.keys():
-    print("'"+str(each)+"': "+str(plan[each])+', \\')
+
 
 # # For rwd func test and debug
 # lab={"type":"as_soon_as_possible", "approx_time": 2, "enjoyment": 6, "productivity": 6}
