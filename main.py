@@ -465,6 +465,8 @@ def policy_random(tasks):
     # Add random tasks
     for n in np.arange(np.ceil((bedtime + duration) / T), np.floor(activetime / T)):
         task_curr = random.choice(task_names)
+        while reward_discrete(n, tasks[task_curr], strictness) == 0:
+            task_curr = random.choice(task_names)
         if tasks[task_curr]['type'] not in plan.keys():
             plan[tasks[task_curr]['type']] = {'name': task_curr, 'time': [n * T, (n + 1) * T], 'rwd': [reward_discrete(n, tasks[task_curr], strictness)]}
         else:
@@ -474,7 +476,7 @@ def policy_random(tasks):
                     count += 1
             plan[tasks[task_curr]['type'] + count*'_'] = {'name': task_curr, 'time': [n * T, (n + 1) * T], 'rwd': [reward_discrete(n, tasks[task_curr], strictness)]}   
 
-    print('Initial plan: ' + str(plan))
+    # print('Initial plan: ' + str(plan))
     return plan
 
 # Policy 2: traversal, calculate all possibilities for every T 
@@ -509,7 +511,7 @@ def plan_sort(plan):
         else:
             newplan[task_names[i]] = plan[task_names[i]]
 
-    print('Sorted plan: ' + str(newplan))
+    # print('Sorted plan: ' + str(newplan))
     return newplan
 
 # Visualize resulting plan for output
@@ -553,6 +555,7 @@ def visualize_plan(plan, ax):
             ax.plot(x[:2], y[:2], '.-', color = color)
             p = ax.plot(x[1:], y[1:], '.-')
             color = p[0].get_color()
+
         # Plot the last segment
         if task == list(plan.keys())[-1]:
             x = [x[-1], x[-1] + T]
@@ -595,7 +598,8 @@ tasks = inputYAML()
 task_names = input_analysis(tasks)
 plan = policy_random(tasks)
 plan = plan_sort(plan)
-
+for each in plan.keys():
+    print("'"+str(each)+"': "+str(plan[each])+', \\')
 
 # # For rwd func test and debug
 # lab={"type":"as_soon_as_possible", "approx_time": 2, "enjoyment": 6, "productivity": 6}
@@ -611,8 +615,8 @@ plan = plan_sort(plan)
 
 # # For output
 # plan={'sleeping':{'time':[0,6],'rwd':[1,2,3,4,5,5]},'breakfast':{'time':[6,8],'rwd':[2,3]},'film':{'time':[8,14],'rwd':[5,2,7,9,1,5]}}
-# fig, ax = plt.subplots(dpi = 100)
-# visualize_plan(plan, ax)
-# plt.tight_layout()
-# plt.show()
+fig, ax = plt.subplots(dpi = 100)
+visualize_plan(plan, ax)
+plt.tight_layout()
+plt.show()
 # fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
