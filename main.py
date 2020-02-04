@@ -275,6 +275,7 @@ def func_sleeping_duration(x, duration_min, duration_max):
     return y
 
 # Mathematical expression for bedtime of sleeping
+# TODO: Extend the bedtime to later than 0:00
 def func_sleeping_bedtime(x, bedtime_min, bedtime_max):
     # bedtime_min ∈ [21, 24] -> earliest time to go to bed: 21:00-24:00
     # bedtime_max ∈ [0, 4] -> latest time to go to bed: 0:00-4:00
@@ -354,7 +355,7 @@ def reward_discrete(n, task, strictness, detailed = True, T = T):
     # Decide how "detailed" the average is
     if detailed:
         # Average over minutes
-        count = round(T * 60 + 1)
+        count = int(np.floor(T * 60 + 1))
     else:
         # Average of two ends of the [nT, (n+1)T]
         count = 2
@@ -403,18 +404,50 @@ def input_analysis(tasks):
     if len(wrong_param) != 0:
         raise Exception("Check inputs of " + str(set(wrong_param)) + " and try again!")
 
+    task_names.remove('today')
     return task_names
 
+# Only consider plan for tomorrow (for now => TODO: future extension for plan for the same day)
 # Policy 1: naive, randomly distribute any task for any T
-def policy_naive(tasks):
-    pass
+def policy_random(tasks):
+    # Init plan
+    plan = {}
+
+    # Extract 'strictness' info from input
+    strictness = tasks['today']['strictness']
+
+    # Plan about 'sleeping'
+    sleeping = tasks['sleeping']
+    getup_min = np.mod(sleeping['bedtime_min'] + sleeping['duration_min'], 24) # Assume getup_min > 0 (for now)
+    getup_max = np.mod(sleeping['bedtime_max'] + sleeping['duration_max'], 24)
+
+    # Assume bedtime_min ∈ [21, 24], bedtime_max ∈ [0, 4] for now => TODO: future extension for bedtime_min ∈ [0, 4]
+    # 'bedtime_list', 'duration_list': discrete choice list for 'bedtime' and 'duration'
+    bedtime_list = np.arange(sleeping['bedtime_min'] - 24, sleeping['bedtime_max'] + T, T)
+    duration_list = np.arange(sleeping['duration_min'], sleeping['duration_max'] + T, T)
+    bedtime = random.choice(bedtime_list)
+    duration = random.choice(duration_list)
+    print(bedtime, duration)
+
+    # Sleep before 24:00
+    if bedtime <= 0:
+        plan['sleeping'] = {'time': [0, bedtime + duration], 'rwd': []}
+        for x in np.arange(0, bedtime + duration, T):
+            plan['sleeping']['rwd'].append(rwd_sleeping(x, np.mod(bedtime, 24), duration, sleeping, strictness))
+    else:
+        plan['N/A'] = {'time': [0, bedtime], 'rwd': list(np.arange(0, bedtime, T) * 0)}
+        plan['sleeping'] = {'time': [bedtime, bedtime + duration], 'rwd': []}
+        for x in np.arange(bedtime, bedtime + duration, T):
+            plan['sleeping']['rwd'].append(rwd_sleeping(x, bedtime, duration, sleeping, strictness))
+
+    return plan
 
 # Policy 2: traversal, calculate all possibilities for every T 
 def policy_traversal(tasks):
     pass
 
 # Visualize output result
-# E.g.: plan={'sleep': {'time': [0, 6], 'rwd':[1, 2, 3, 4, 5, 4]}, 'breakfast': {'time': [6, 8], 'rwd': [2, 3]}}
+# E.g.: plan={'sleeping': {'time': [0, 6], 'rwd':[1, 2, 3, 4, 5, 4]}, 'breakfast': {'time': [6, 8], 'rwd': [2, 3]}}
 def visualize_plan(plan, ax):
     # plan: type: dict, keys: task name, same as input file; each task: also dict, keys: 'time', 'rwd'; 'time': list, the beginning and ending hour of the day, 'rwd': discrete current reward corresponding discrete time period
 
@@ -437,7 +470,6 @@ def visualize_plan(plan, ax):
         # Assume all the 'task's in 'plan' follows the time order for now => TODO
         time = plan[task]['time']
         rwd = plan[task]['rwd']
-        name = todolist[task]['name']
 
         # To plot lines that are all connected
         x = [x[-1]]
@@ -448,21 +480,29 @@ def visualize_plan(plan, ax):
             x.remove(x[0])
             y.remove(y[0])
 
-            x.extend(np.linspace(time[0], time[1], round((time[1] - time[0]) / T) + 1)[:-1])
+            x.extend(np.linspace(time[0], time[1], int(np.floor((time[1] - time[0]) / T)) + 1)[:-1])
             y.extend(rwd)
             p = ax.plot(x, y, '.-')
             color = p[0].get_color()
         else:
-            x.extend(np.linspace(time[0], time[1], round((time[1] - time[0]) / T) + 1)[:-1])
+            x.extend(np.linspace(time[0], time[1], int(np.floor((time[1] - time[0]) / T)) + 1)[:-1])
             y.extend(rwd)
             ax.plot(x[:2], y[:2], '.-', color = color)
             p = ax.plot(x[1:], y[1:], '.-')
             color = p[0].get_color()
 
-        ax.text((time[0] + time[1]) / 2, np.max(y) + 0.5, name, color = color, **text_font)
+        # Plot the last segment
+        if task == list(plan.keys())[-1]:
+            x = [x[-1], x[-1] + T]
+            y = [y[-1], y[-1]]
+            ax.plot(x, y, '.-', color = color)
+
+        ax.text((time[0] + time[1]) / 2, np.max(y) + 0.5, task, color = color, **text_font)
 
         x_max = max(x_max, np.max(x))
         y_max = max(y_max, np.max(y))
+
+
 
     # Add axes
     # ax.set_xlim(-0.5, 24.5)
@@ -493,8 +533,8 @@ tasks = inputYAML()
 
 # # For policy test
 task_names = input_analysis(tasks)
-# policy_naive(tasks)
-
+plan = policy_random(tasks)
+print(plan)
 
 
 # # For rwd func test and debug
@@ -511,8 +551,8 @@ task_names = input_analysis(tasks)
 
 # # For output
 # plan={'sleeping':{'time':[0,6],'rwd':[1,2,3,4,5,5]},'breakfast':{'time':[6,8],'rwd':[2,3]},'film':{'time':[8,14],'rwd':[5,2,7,9,1,5]}}
-# fig, ax = plt.subplots(dpi = 100)
-# visualize_plan(plan, ax)
-# plt.tight_layout()
-# plt.show()
+fig, ax = plt.subplots(dpi = 100)
+visualize_plan(plan, ax)
+plt.tight_layout()
+plt.show()
 # # fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
