@@ -440,6 +440,15 @@ def policy_random(tasks):
         for x in np.arange(bedtime, bedtime + duration, T):
             plan['sleeping']['rwd'].append(rwd_sleeping(x, bedtime, duration, sleeping, strictness))
 
+    # Assume the daily plan is circulant
+    if bedtime <= 0:
+        # Active time limited before 24:00
+        # TODO: after all the random tasks, add Task 'sleeping2'
+        activetime = bedtime + 24
+    else:
+        # Active time last until 24:00
+        activetime = 24
+    # TODO: add random tasks
     return plan
 
 # Policy 2: traversal, calculate all possibilities for every T 
@@ -501,8 +510,6 @@ def visualize_plan(plan, ax):
 
         x_max = max(x_max, np.max(x))
         y_max = max(y_max, np.max(y))
-
-
 
     # Add axes
     # ax.set_xlim(-0.5, 24.5)
