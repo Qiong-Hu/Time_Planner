@@ -22,7 +22,7 @@ T = 1               # Discrete time sampling window length
                     # Suggested sampling time duration: 0.5 hour (30 mins) => similar to tomato time, time of human concentration
                     # T <= 1 and 60*T must be integer (for now), so a good choice list for T: [1, 0.5, 1/3, 0.25, 0.2, 1/6, 0.1, 1/12]
                     # corresponding min: [60, 30, 20, 15, 12, 10, 6, 5]
-approx_err = 1.4    # Procrastination time percentage based on approx_time
+approx_err = 1.5    # Procrastination time percentage based on approx_time
 
 # Read input parameters from YAML file, default filename: 'todo.yaml'
 def inputYAML(filename = 'todolist.yaml'):
@@ -84,20 +84,12 @@ def rwd_fixed_ddl(x, task, strictness):
         deadline = task["deadline"]
         reward = rwd_after_strict(strictness, task["enjoyment"], task["productivity"])
 
-        xdata = [0, approx_time * approx_err, deadline]
-        ydata = [reward, reward / 2, reward / 5]
-        if xdata[1] <= xdata[2]:
-            if xdata[0] <= x <= xdata[1]:
-                y = findfunc_fixed_ddl(x, (xdata[0], ydata[0]), (xdata[1], ydata[1]))
-            elif xdata[1] < x <= xdata[2]:
-                y = findfunc_fixed_ddl(x, (xdata[1], ydata[1]), (xdata[2], ydata[2]))
-            else:
-                y = 0
+        xdata = [0, deadline]
+        ydata = [reward, reward / 5]
+        if 0 <= x <= deadline:
+            y = findfunc_fixed_ddl(x, (xdata[0], ydata[0]), (xdata[1], ydata[1]))
         else:
-            if 0 <= x <= deadline:
-                y = findfunc_fixed_ddl(x, (xdata[0], ydata[0]), (xdata[2], ydata[2]))
-            else:
-                y = 0
+            y = 0
         return y
     else:
         raise Exception("Wrong reward function for non-fixed-ddl task")
@@ -452,7 +444,7 @@ def policy_random(tasks):
         # Because circulant or symmetric
         plan['sleeping2'] = {'name': 'sleeping', 'time': [bedtime + 24, 24], 'rwd': []}
         for x in np.arange(bedtime + 24, 24, T):
-            plan['sleeping2']['rwd'].append(rwd_sleeping(x, bedtime, duration, sleeping, strictness))
+            plan['sleeping2']['rwd'].append(rwd_sleeping(x, bedtime + 24, duration, sleeping, strictness))
 
     # Assume the daily plan is circulant (a.k.a. bedtime for the next day = bedtime of the planned day)
     if bedtime <= 0:
@@ -478,6 +470,8 @@ def policy_random(tasks):
 
     # print('Initial plan: ' + str(plan))
     return plan
+
+# !!TODO: interprete diff def for t
 
 # Policy 2: traversal, calculate all possibilities for every T 
 def policy_traversal(tasks):
@@ -559,7 +553,7 @@ def visualize_plan(plan, ax):
         # Plot the last segment
         if task == list(plan.keys())[-1]:
             x = [x[-1], x[-1] + T]
-            y = [y[-1], plan[list(plan.keys())[0]]['rwd'][0]]
+            y = [y[-1], y[-1]]
             ax.plot(x, y, '.-', color = color)
 
         ax.text((time[0] + time[1]) / 2, np.max(y[1:]) + 0.5, plan[task]['name'], color = color, **text_font)
