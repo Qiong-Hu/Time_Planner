@@ -22,7 +22,7 @@ T = 1               # Discrete time sampling window length
                     # Suggested sampling time duration: 0.5 hour (30 mins) => similar to tomato time, time of human concentration
                     # T <= 1 and 60*T must be integer (for now), so a good choice list for T: [1, 0.5, 1/3, 0.25, 0.2, 1/6, 0.1, 1/12]
                     # corresponding min: [60, 30, 20, 15, 12, 10, 6, 5]
-approx_err = 1.5    # Procrastination time percentage based on approx_time
+procrastination = 1.5    # Approxinate procrastination time percentage based on approx_time
 
 # Read input parameters from YAML file, default filename: 'todo.yaml'
 def inputYAML(filename = "todolist.yaml"):
@@ -117,7 +117,7 @@ def rwd_asap(x, task, strictness):
         approx_time = task["approx_time"]
         reward = rwd_after_strict(strictness, task["enjoyment"], task["productivity"])
 
-        xdata = [0, approx_time * approx_err]
+        xdata = [0, approx_time * procrastination]
         ydata = [reward, reward / 2]
         if x >= xdata[0]:
             y = findfunc_asap(x, (xdata[0], ydata[0]), (xdata[1], ydata[1]))
@@ -405,7 +405,7 @@ def input_analysis(tasks):
     return task_names
 
 # Only consider plan for tomorrow (for now => TODO: future extension for plan for the same day)
-# Policy 1: naive, randomly distribute any task for any T
+# Policy random: naive, initial, randomly distribute any task for any T
 def policy_random(tasks):
     # Init plan
     plan = {}
@@ -442,9 +442,9 @@ def policy_random(tasks):
 
     if bedtime < 0:
         # Because circulant or symmetric
-        plan['sleeping2'] = {'name': 'sleeping', 'time': [bedtime + 24, 24], 'rwd': []}
+        plan['sleeping_'] = {'name': 'sleeping', 'time': [bedtime + 24, 24], 'rwd': []}
         for x in np.arange(bedtime + 24, 24, T):
-            plan['sleeping2']['rwd'].append(rwd_sleeping(x, bedtime + 24, duration, sleeping, strictness))
+            plan['sleeping_']['rwd'].append(rwd_sleeping(x, bedtime + 24, duration, sleeping, strictness))
 
     # Assume the daily plan is circulant (a.k.a. bedtime for the next day = bedtime of the planned day)
     if bedtime <= 0:
@@ -506,10 +506,125 @@ def policy_random(tasks):
 
             plan[plan_ref]['rwd'].append(rwd)
 
-    # print('Initial plan: ' + str(plan))
+    # print('Initial random plan: ' + str(plan))
     return plan
 
-# Policy 2: traversal, calculate all possibilities for every T 
+# Modify policy_random to consider about approx_time of fixed_ddl and asap tasks
+def policy_random_modify(tasks):
+    # Init plan
+    plan = {}
+
+    # Extract 'strictness' info from input
+    strictness = tasks['today']['strictness']
+
+    # Plan about 'sleeping'
+    sleeping = tasks['sleeping']
+    getup_min = np.mod(sleeping['bedtime_min'] + sleeping['duration_min'], 24) # Assume getup_min > 0 (for now)
+    getup_max = np.mod(sleeping['bedtime_max'] + sleeping['duration_max'], 24)
+
+    # Assume bedtime_min ∈ [21, 24], bedtime_max ∈ [0, 4] for now => TODO: future extension for bedtime_min ∈ [0, 4]
+    # 'bedtime_list', 'duration_list': discrete choice list for 'bedtime' and 'duration'
+    bedtime_list = np.arange(sleeping['bedtime_min'] - 24, sleeping['bedtime_max'] + T, T)
+    duration_list = np.arange(sleeping['duration_min'], sleeping['duration_max'] + T, T)
+    bedtime = random.choice(bedtime_list)
+    duration = random.choice(duration_list)
+    print('bedtime: ' + str(np.mod(bedtime, 24)) + ':00\tduration: ' + str(duration) + 'h\tgetup time: ' + str(bedtime + duration) + ':00')
+
+    # Sleep before 24:00
+    plan['sleeping'] = {'name': 'sleeping'}
+    if bedtime <= 0:
+        plan['sleeping']['time'] = [0, bedtime + duration]
+        plan['sleeping']['rwd'] = []
+        for x in np.arange(0, bedtime + duration, T):
+            plan['sleeping']['rwd'].append(rwd_sleeping(x, np.mod(bedtime, 24), duration, sleeping, strictness))
+    else:
+        plan['N/A'] = {'name': 'N/A', 'time': [0, bedtime], 'rwd': list(np.arange(0, bedtime, T) * 0)}
+        plan['sleeping']['time'] = [bedtime, bedtime + duration]
+        plan['sleeping']['rwd'] = []
+        for x in np.arange(bedtime, bedtime + duration, T):
+            plan['sleeping']['rwd'].append(rwd_sleeping(x, bedtime, duration, sleeping, strictness))
+
+    if bedtime < 0:
+        # Because circulant or symmetric
+        plan['sleeping_'] = {'name': 'sleeping', 'time': [bedtime + 24, 24], 'rwd': []}
+        for x in np.arange(bedtime + 24, 24, T):
+            plan['sleeping_']['rwd'].append(rwd_sleeping(x, bedtime + 24, duration, sleeping, strictness))
+
+    # Assume the daily plan is circulant (a.k.a. bedtime for the next day = bedtime of the planned day)
+    if bedtime <= 0:
+        # Active until before 24:00, then go to sleep (add another segment of sleeping)
+        activetime = bedtime + 24
+    else:
+        # Active until 24:00
+        activetime = 24
+
+    # If bedtime after 0:00, extra time for other tasks
+    time_list = list(np.arange(np.ceil((bedtime + duration) / T), np.floor(activetime / T), T))
+    if 'N/A' in plan.keys():
+        time_NA = plan['N/A']['time']
+        time_list.extend(np.arange(np.ceil(time_NA[0] / T), np.floor(time_NA[1] / T), T))
+        plan.pop('N/A')
+
+    # Add random tasks into 'plan'
+    task_names_copy = task_names[:]
+    task_count = {}
+    for n in time_list:
+        task_curr = random.choice(task_names_copy)
+        while_start = time.time()       # In case of time-out
+        while reward_discrete(n, tasks[task_curr], strictness) == 0:
+            task_curr = random.choice(task_names_copy)
+            while_end = time.time()
+            if while_end - while_start > 5:
+                break
+        if tasks[task_curr]['type'] not in plan.keys():
+            plan_ref = tasks[task_curr]['type']
+            plan[plan_ref] = {'name': task_curr, 'time': [n * T, (n + 1) * T], 'rwd': []}
+
+            # Modify 'n' for different meaning of time
+            if plan_ref in ['fixed_time']:
+                rwd = reward_discrete(n, tasks[task_curr], strictness)
+            elif plan_ref in ['fun', 'necessity', 'meal']:
+                rwd = reward_discrete(n, tasks[task_curr], strictness)
+                task_names_copy.remove(task_curr)
+            elif plan_ref in ['as_soon_as_possible', 'fixed_ddl']:
+                rwd = reward_discrete(n - (24 - np.ceil(tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
+                task_count[task_curr] = 1
+                if task_count[task_curr] * T >= tasks[task_curr]['approx_time'] * procrastination:
+                    task_names_copy.remove(task_curr)
+            elif plan_ref in ['long_term']:
+                rwd = reward_discrete(T, tasks[task_curr], strictness)
+                task_names_copy.remove(task_curr)
+
+            plan[plan_ref]['rwd'].append(rwd)
+        else:
+            count = 0
+            for task_prev in plan.keys():
+                if task_prev.strip('_') == tasks[task_curr]['type']:
+                    count += 1
+            plan_ref = tasks[task_curr]['type'] + count*'_'
+            plan[plan_ref] = {'name': task_curr, 'time': [n * T, (n + 1) * T], 'rwd': []}
+
+            # Modify 'n' for different meaning of time
+            if plan_ref.strip('_') in ['fixed_time']:
+                rwd = reward_discrete(n, tasks[task_curr], strictness)
+            elif plan_ref.strip('_') in ['fun', 'necessity', 'meal']:
+                rwd = reward_discrete(n, tasks[task_curr], strictness)
+                task_names_copy.remove(task_curr)
+            elif plan_ref.strip('_') in ['as_soon_as_possible', 'fixed_ddl']:
+                rwd = reward_discrete(n - (24 - np.ceil(tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
+                task_count[task_curr] += 1
+                if task_count[task_curr] * T >= tasks[task_curr]['approx_time'] * procrastination:
+                    task_names_copy.remove(task_curr)
+            elif plan_ref.strip('_') in ['long_term']:
+                rwd = reward_discrete(T, tasks[task_curr], strictness)
+                task_names_copy.remove(task_curr)
+
+            plan[plan_ref]['rwd'].append(rwd)
+
+    # print('Initial random plan: ' + str(plan))
+    return plan
+
+# Policy traversal: traversal, calculate all possibilities for every T 
 def policy_traversal(tasks):
     pass
 
@@ -626,11 +741,11 @@ tasks = inputYAML()
 
 # # For policy test
 task_names = input_analysis(tasks)
-plan = policy_random(tasks)
+plan = policy_random_modify(tasks)
 plan = plan_sort(plan)
-for each in plan.keys():
-    print("'"+str(each)+"': "+str(plan[each])+', \\')
-print(task_names)
+# for each in plan.keys():
+#     print("'"+str(each)+"': "+str(plan[each])+', \\')
+
 
 # # For rwd func test and debug
 # lab={"type":"as_soon_as_possible", "approx_time": 2, "enjoyment": 6, "productivity": 6}
@@ -646,8 +761,8 @@ print(task_names)
 
 # # For output
 # plan={'sleeping':{'time':[0,6],'rwd':[1,2,3,4,5,5]},'breakfast':{'time':[6,8],'rwd':[2,3]},'film':{'time':[8,14],'rwd':[5,2,7,9,1,5]}}
-# fig, ax = plt.subplots(dpi = 100)
-# visualize_plan(plan, ax)
-# plt.tight_layout()
-# plt.show()
+fig, ax = plt.subplots(dpi = 100)
+visualize_plan(plan, ax)
+plt.tight_layout()
+plt.show()
 # fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')

@@ -64,9 +64,9 @@ housekeeping:
     name: housekeeping
     type: necessity     # e.g.: housekeeping, showering, brushing teeth, cooking
     time: []            # preferred time for the activity: if empty then anytime is ok, if has 1 param then it's the optimal, if has 2 param then during the period is the optimal
-    duration: 0.75      # 45 mins
+    duration: 1         # 1h
     enjoyment: 0        # 0-10, float
-    productivity: 10    # 0-10, float; 10 means mandetory, schedule this tasks first
+    productivity: 2     # 0-10, float
 
 breakfast:
     name: breakfast
