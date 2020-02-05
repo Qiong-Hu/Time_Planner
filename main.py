@@ -462,10 +462,11 @@ def policy_random(tasks):
         plan.pop('N/A')
 
     # Add random tasks into 'plan'
+    task_names_copy = task_names[:]
     for n in time_list:
-        task_curr = random.choice(task_names)
+        task_curr = random.choice(task_names_copy)
         while reward_discrete(n, tasks[task_curr], strictness) == 0:
-            task_curr = random.choice(task_names)
+            task_curr = random.choice(task_names_copy)
         if tasks[task_curr]['type'] not in plan.keys():
             plan_ref = tasks[task_curr]['type']
             plan[plan_ref] = {'name': task_curr, 'time': [n * T, (n + 1) * T], 'rwd': []}
@@ -475,12 +476,12 @@ def policy_random(tasks):
                 rwd = reward_discrete(n, tasks[task_curr], strictness)
             elif plan_ref in ['fun', 'necessity', 'meal']:
                 rwd = reward_discrete(n, tasks[task_curr], strictness)
-                task_names.remove(task_curr)
+                task_names_copy.remove(task_curr)
             elif plan_ref in ['as_soon_as_possible', 'fixed_ddl']:
                 rwd = reward_discrete(n - (24 - np.ceil(tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
             elif plan_ref in ['long_term']:
                 rwd = reward_discrete(T, tasks[task_curr], strictness)
-                task_names.remove(task_curr)
+                task_names_copy.remove(task_curr)
 
             plan[plan_ref]['rwd'].append(rwd)
         else:
@@ -496,12 +497,12 @@ def policy_random(tasks):
                 rwd = reward_discrete(n, tasks[task_curr], strictness)
             elif plan_ref.strip('_') in ['fun', 'necessity', 'meal']:
                 rwd = reward_discrete(n, tasks[task_curr], strictness)
-                task_names.remove(task_curr)
+                task_names_copy.remove(task_curr)
             elif plan_ref.strip('_') in ['as_soon_as_possible', 'fixed_ddl']:
                 rwd = reward_discrete(n - (24 - np.ceil(tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
             elif plan_ref.strip('_') in ['long_term']:
                 rwd = reward_discrete(T, tasks[task_curr], strictness)
-                task_names.remove(task_curr)
+                task_names_copy.remove(task_curr)
 
             plan[plan_ref]['rwd'].append(rwd)
 
@@ -629,6 +630,7 @@ plan = policy_random(tasks)
 plan = plan_sort(plan)
 for each in plan.keys():
     print("'"+str(each)+"': "+str(plan[each])+', \\')
+print(task_names)
 
 # # For rwd func test and debug
 # lab={"type":"as_soon_as_possible", "approx_time": 2, "enjoyment": 6, "productivity": 6}
@@ -644,8 +646,8 @@ for each in plan.keys():
 
 # # For output
 # plan={'sleeping':{'time':[0,6],'rwd':[1,2,3,4,5,5]},'breakfast':{'time':[6,8],'rwd':[2,3]},'film':{'time':[8,14],'rwd':[5,2,7,9,1,5]}}
-fig, ax = plt.subplots(dpi = 100)
-visualize_plan(plan, ax)
-plt.tight_layout()
-plt.show()
+# fig, ax = plt.subplots(dpi = 100)
+# visualize_plan(plan, ax)
+# plt.tight_layout()
+# plt.show()
 # fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
