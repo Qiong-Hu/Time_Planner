@@ -454,38 +454,59 @@ def policy_random(tasks):
         # Active until 24:00
         activetime = 24
 
-    # Add random tasks
-    time_list = list(np.arange(np.ceil((bedtime + duration) / T), np.floor(activetime / T)))
+    # If bedtime after 0:00, extra time for other tasks
+    time_list = list(np.arange(np.ceil((bedtime + duration) / T), np.floor(activetime / T), T))
     if 'N/A' in plan.keys():
         time_NA = plan['N/A']['time']
-        time_list.extend(np.arange(np.ceil(time_NA[0] / T), np.floor(time_NA[1] / T)))
-        plan.pop('N/A')       
+        time_list.extend(np.arange(np.ceil(time_NA[0] / T), np.floor(time_NA[1] / T), T))
+        plan.pop('N/A')
+
+    # Add random tasks into 'plan'
     for n in time_list:
         task_curr = random.choice(task_names)
         while reward_discrete(n, tasks[task_curr], strictness) == 0:
             task_curr = random.choice(task_names)
         if tasks[task_curr]['type'] not in plan.keys():
-            plan[tasks[task_curr]['type']] = {'name': task_curr, 'time': [n * T, (n + 1) * T], 'rwd': []}
+            plan_ref = tasks[task_curr]['type']
+            plan[plan_ref] = {'name': task_curr, 'time': [n * T, (n + 1) * T], 'rwd': []}
 
-            # if tasks[task_curr]['type'] in ['fixed_time', 'fun', 'necessity', 'meal']:
-            #     rwd = reward_discrete(n, tasks[task_curr], strictness)
-            # else if tasks[task_curr]['type'] in ['as_soon_as_possible', 'fixed_ddl']:
-            rwd = reward_discrete(n, tasks[task_curr], strictness) # TODO: modify n; pop 'fun' after done
-            plan[tasks[task_curr]['type']]['rwd'].append(rwd)
+            # Modify 'n' for different meaning of time
+            if plan_ref in ['fixed_time']:
+                rwd = reward_discrete(n, tasks[task_curr], strictness)
+            elif plan_ref in ['fun', 'necessity', 'meal']:
+                rwd = reward_discrete(n, tasks[task_curr], strictness)
+                task_names.remove(task_curr)
+            elif plan_ref in ['as_soon_as_possible', 'fixed_ddl']:
+                rwd = reward_discrete(n - (24 - np.ceil(tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
+            elif plan_ref in ['long_term']:
+                rwd = reward_discrete(T, tasks[task_curr], strictness)
+                task_names.remove(task_curr)
+
+            plan[plan_ref]['rwd'].append(rwd)
         else:
             count = 0
             for task_prev in plan.keys():
                 if task_prev.strip('_') == tasks[task_curr]['type']:
                     count += 1
-            plan[tasks[task_curr]['type'] + count*'_'] = {'name': task_curr, 'time': [n * T, (n + 1) * T], 'rwd': []}
+            plan_ref = tasks[task_curr]['type'] + count*'_'
+            plan[plan_ref] = {'name': task_curr, 'time': [n * T, (n + 1) * T], 'rwd': []}
 
-            rwd = reward_discrete(n, tasks[task_curr], strictness)
-            plan[tasks[task_curr]['type'] + count*'_']['rwd'].append(rwd)
+            # Modify 'n' for different meaning of time
+            if plan_ref.strip('_') in ['fixed_time']:
+                rwd = reward_discrete(n, tasks[task_curr], strictness)
+            elif plan_ref.strip('_') in ['fun', 'necessity', 'meal']:
+                rwd = reward_discrete(n, tasks[task_curr], strictness)
+                task_names.remove(task_curr)
+            elif plan_ref.strip('_') in ['as_soon_as_possible', 'fixed_ddl']:
+                rwd = reward_discrete(n - (24 - np.ceil(tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
+            elif plan_ref.strip('_') in ['long_term']:
+                rwd = reward_discrete(T, tasks[task_curr], strictness)
+                task_names.remove(task_curr)
+
+            plan[plan_ref]['rwd'].append(rwd)
 
     # print('Initial plan: ' + str(plan))
     return plan
-
-# !!TODO: interprete diff def for t
 
 # Policy 2: traversal, calculate all possibilities for every T 
 def policy_traversal(tasks):
