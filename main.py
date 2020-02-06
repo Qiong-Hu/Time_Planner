@@ -465,8 +465,6 @@ def policy_random(tasks):
     task_names_copy = task_names[:]
     for n in time_list:
         task_curr = random.choice(task_names_copy)
-        while reward_discrete(n, tasks[task_curr], strictness) == 0:
-            task_curr = random.choice(task_names_copy)
         if tasks[task_curr]['type'] not in plan.keys():
             plan_ref = tasks[task_curr]['type']
             plan[plan_ref] = {'name': task_curr, 'time': [n * T, (n + 1) * T], 'rwd': []}
@@ -481,7 +479,7 @@ def policy_random(tasks):
                 rwd = reward_discrete(n - (24 - np.ceil(tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
             elif plan_ref in ['long_term']:
                 rwd = reward_discrete(T, tasks[task_curr], strictness)
-                task_names_copy.remove(task_curr)
+                task_names_copy.remove(task_curr)   # TODO: may not remove if T≠1: count the number of the long_term tasks => modify the rwd value
 
             plan[plan_ref]['rwd'].append(rwd)
         else:
@@ -574,7 +572,7 @@ def policy_random_modify(tasks):
         while reward_discrete(n, tasks[task_curr], strictness) == 0:
             task_curr = random.choice(task_names_copy)
             while_end = time.time()
-            if while_end - while_start > 5:
+            if while_end - while_start > 3:
                 break
         if tasks[task_curr]['type'] not in plan.keys():
             plan_ref = tasks[task_curr]['type']
@@ -624,9 +622,32 @@ def policy_random_modify(tasks):
     # print('Initial random plan: ' + str(plan))
     return plan
 
-# Policy traversal: traversal, calculate all possibilities for every T 
-def policy_traversal(tasks):
+# Based on the plan generated from policy_random(_modify) and replace randomly with tasks of higher rwd => local optimal result
+def policy_random_optimal(tasks):
     pass
+
+# Policy traversal: list all possible plans, calculate the plan with the max rwd
+def policy_traversal(tasks):
+    # Init plan, plan_list (all possible plans)
+    plan = {}
+    plan_list = []
+
+    # Extract 'strictness' info from input
+    strictness = tasks['today']['strictness']
+
+    # Plan about 'sleeping'
+    sleeping = tasks['sleeping']
+    getup_min = np.mod(sleeping['bedtime_min'] + sleeping['duration_min'], 24) # Assume getup_min > 0 (for now)
+    getup_max = np.mod(sleeping['bedtime_max'] + sleeping['duration_max'], 24)
+
+    # Assume bedtime_min ∈ [21, 24], bedtime_max ∈ [0, 4] for now => TODO: future extension for bedtime_min ∈ [0, 4]
+    # 'bedtime_list', 'duration_list': discrete choice list for 'bedtime' and 'duration'
+    bedtime_list = np.arange(sleeping['bedtime_min'] - 24, sleeping['bedtime_max'] + T, T)
+    duration_list = np.arange(sleeping['duration_min'], sleeping['duration_max'] + T, T)
+
+    # TODO
+
+    return plan
 
 # Make the 'Initial plan' more neat: same continuous task in the same dict.key, all the tasks in the time order
 def plan_sort(plan):
