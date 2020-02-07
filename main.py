@@ -476,7 +476,7 @@ def policy_random(tasks):
                 rwd = reward_discrete(n, tasks[task_curr], strictness)
                 task_names_copy.remove(task_curr)
             elif plan_ref in ['as_soon_as_possible', 'fixed_ddl']:
-                rwd = reward_discrete(n - (24 - np.ceil(tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
+                rwd = reward_discrete(n - np.ceil((24 - tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
             elif plan_ref in ['long_term']:
                 rwd = reward_discrete(T, tasks[task_curr], strictness)
                 task_names_copy.remove(task_curr)   # TODO: may not remove if T≠1: count the number of the long_term tasks => modify the rwd value
@@ -497,7 +497,7 @@ def policy_random(tasks):
                 rwd = reward_discrete(n, tasks[task_curr], strictness)
                 task_names_copy.remove(task_curr)
             elif plan_ref.strip('_') in ['as_soon_as_possible', 'fixed_ddl']:
-                rwd = reward_discrete(n - (24 - np.ceil(tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
+                rwd = reward_discrete(n - np.ceil((24 - tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
             elif plan_ref.strip('_') in ['long_term']:
                 rwd = reward_discrete(T, tasks[task_curr], strictness)
                 task_names_copy.remove(task_curr)
@@ -585,7 +585,7 @@ def policy_random_modify(tasks):
                 rwd = reward_discrete(n, tasks[task_curr], strictness)
                 task_names_copy.remove(task_curr)
             elif plan_ref in ['as_soon_as_possible', 'fixed_ddl']:
-                rwd = reward_discrete(n - (24 - np.ceil(tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
+                rwd = reward_discrete(n - np.ceil((24 - tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
                 task_count[task_curr] = 1
                 if task_count[task_curr] * T >= tasks[task_curr]['approx_time'] * procrastination:
                     task_names_copy.remove(task_curr)
@@ -609,7 +609,7 @@ def policy_random_modify(tasks):
                 rwd = reward_discrete(n, tasks[task_curr], strictness)
                 task_names_copy.remove(task_curr)
             elif plan_ref.strip('_') in ['as_soon_as_possible', 'fixed_ddl']:
-                rwd = reward_discrete(n - (24 - np.ceil(tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
+                rwd = reward_discrete(n - np.ceil((24 - tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
                 task_count[task_curr] += 1
                 if task_count[task_curr] * T >= tasks[task_curr]['approx_time'] * procrastination:
                     task_names_copy.remove(task_curr)
@@ -624,6 +624,7 @@ def policy_random_modify(tasks):
 
 # Based on the plan generated from policy_random(_modify) and replace randomly with tasks of higher rwd => local optimal result
 def policy_random_optimal(tasks):
+    # TODO
     pass
 
 # Policy traversal: list all possible plans, calculate the plan with the max rwd
@@ -764,8 +765,8 @@ tasks = inputYAML()
 task_names = input_analysis(tasks)
 plan = policy_random_modify(tasks)
 plan = plan_sort(plan)
-# for each in plan.keys():
-#     print("'"+str(each)+"': "+str(plan[each])+', \\')
+for each in plan.keys():
+    print("'"+str(each)+"': "+str(plan[each])+', \\')
 
 
 # # For rwd func test and debug
