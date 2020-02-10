@@ -521,6 +521,7 @@ def policy_random(tasks):
 
             plan[plan_ref]['rwd'].append(rwd)
 
+    plan = plan_order(plan)
     # print('Initial random plan: ' + str(plan))
     return plan
 
@@ -636,6 +637,7 @@ def policy_random_modify(tasks):
 
             plan[plan_ref]['rwd'].append(rwd)
 
+    plan = plan_order(plan)
     # print('Initial random plan: ' + str(plan))
     return plan
 
@@ -661,7 +663,7 @@ def policy_random_optimal(tasks, plan, horizon = 5, search_cycle = 5):
         task_count = {}
 
         # Search through all the tasks in the plan
-        # Not consider about the time limit of each task for now => TODO: future work
+        # Not consider about the time limit of each task for now => updated in 'policy_random_optimal_modify' function
 
         for task_curr in plan_new.keys():
             if task_curr.strip('_') == 'sleeping':
@@ -701,7 +703,95 @@ def policy_random_optimal(tasks, plan, horizon = 5, search_cycle = 5):
             if j_cycle_flag == False:
                 continue
 
-            # print('task_curr: '+task_curr+'\ttask_replace: '+task_replace)
+            if tasks[task_replace]['type'] not in plan_new.keys():
+                plan_ref = tasks[task_replace]['type']
+            elif tasks[task_replace]['type'] == task_curr.strip('_'):
+                plan_ref = task_curr
+            else:
+                count = 0
+                while True:
+                    plan_ref = tasks[task_replace]['type'] + count * '_'
+                    if plan_ref in plan_new.keys():
+                        count += 1
+                    else:
+                        break
+            
+            plan_new[plan_ref] = {'name': task_replace, 'time': [time[0], time[1]], 'rwd': []}
+            plan_new[plan_ref]['rwd'].append(rwd_replace)
+
+        # Make sure all tasks are in time order in the plan_new
+        plan_new = plan_order(plan_new)
+
+    return plan_new
+
+# Remove disposable tasks (tasks that only need to do once every day) and replace by random
+# TODO 
+def policy_sort_disposable(tasks, plan):
+    pass
+
+# Apply disposable-task-removal in every 'horizon' cycle in 'policy_random_optimal'
+def policy_random_optimal_modify(tasks, plan, horizon = 5, search_cycle = 5):
+    # Given:
+    #     tasks: from input file
+    #     plan: randomly generated plan from policy_random, unsorted, may or may not ordered
+    #     horizon: number of cycle to thoroughly search and replace task in each T 
+    #     search_cycle: number of random generation for each task's replacement search
+    # Return: new plan with a higher total rwd over the day
+
+    # Extract 'strictness' info from input
+    strictness = tasks['today']['strictness']
+
+    # Init: copy plan to plan_new
+    plan_new = {}
+    for task in plan:
+        plan_new[task] = plan[task]
+
+    for i in range(horizon):
+        task_names_copy = task_names[:]
+        task_count = {}
+
+        # Search through all the tasks in the plan
+        # Now consider about the time limit of each task for now
+
+        for task_curr in plan_new.keys():
+            if task_curr.strip('_') == 'sleeping':
+                continue
+
+            time = plan_new[task_curr]['time']
+            for j in range(search_cycle):
+                task_replace = random.choice(task_names_copy)
+
+                n = time[0] / T
+                plan_ref = tasks[task_replace]['type']
+                if plan_ref in ['fixed_time']:
+                    rwd_replace = reward_discrete(n, tasks[task_replace], strictness)
+                elif plan_ref in ['fun', 'necessity', 'meal']:
+                    rwd_replace = reward_discrete(n, tasks[task_replace], strictness)
+                    task_names_copy.remove(task_replace)
+                elif plan_ref in ['as_soon_as_possible', 'fixed_ddl']:
+                    rwd_replace = reward_discrete(n - np.ceil((24 - tasks['today']['curr_time']) / T), tasks[task_replace], strictness)
+                    try:
+                        task_count[task_replace] += 1
+                    except:
+                        task_count[task_replace] = 1
+
+                    if task_count[task_replace] * T >= tasks[task_replace]['approx_time'] * procrastination:
+                        task_names_copy.remove(task_replace)
+                elif plan_ref in ['long_term']:
+                    rwd_replace = reward_discrete(T, tasks[task_replace], strictness)
+                    task_names_copy.remove(task_replace)
+
+                if rwd_replace > plan_new[task_curr]['rwd'][0]:
+                    plan_new.pop(task_curr)
+                    j_cycle_flag = True
+                    break
+                else:
+                    j_cycle_flag = False
+
+            if j_cycle_flag == False:
+                continue
+
+            
             if tasks[task_replace]['type'] not in plan_new.keys():
                 plan_ref = tasks[task_replace]['type']
             elif tasks[task_replace]['type'] == task_curr.strip('_'):
@@ -724,6 +814,7 @@ def policy_random_optimal(tasks, plan, horizon = 5, search_cycle = 5):
     return plan_new
 
 # Policy traversal: list all possible plans, calculate the plan with the max rwd
+# TODO
 def policy_traversal(tasks):
     # Init plan, plan_list (all possible plans)
     plan = {}
@@ -877,7 +968,6 @@ tasks = inputYAML()
 # # For policy test
 task_names = input_analysis(tasks)
 plan1 = policy_random(tasks)
-plan1 = plan_order(plan1)
 for each in plan1.keys():
     print("'"+str(each)+"': "+str(plan1[each])+', \\')
 print('\n\n')
