@@ -38,23 +38,23 @@ hw:
     enjoyment: 1        # 0-10, float
     productivity: 5     # 0-10, float, the larger, the more important
 
-lab:
-    name: lab
-    type: as_soon_as_possible   # e.g.: reading emails, application
+email:
+    name: email
+    type: as_soon_as_possible   # e.g.: reading emails, reply messages
     approx_time: 2      # approximate required time: 2 hours, extended by certain percentage (like 40%) in the main planner function
     switch: 0.2         # switch time: 12 minutes, from deciding to do to actually begin to work
     enjoyment: 5        # 0-10, float
     productivity: 6     # 0-10, float, the larger, the more important
 
-film:
-    name: film
+reading:
+    name: reading
     type: fun           # e.g.: entertainments, reading, writing, shopping, films, social
     enjoyment: 7        # 0-10, float
     productivity: 1     # 0-10, float
 
-exercise:
-    name: exercise
-    type: long_term     # e.g.: exercise, language, musical instrument
+language:
+    name: language
+    type: long_term     # e.g.: exercise, learn new language, practice musical instrument
     insist_day: 2       # insisted for 2 days, update every time of imiplementation
     duration_max: 1.5   # maximum duration time for one day: 1.5h
     enjoyment: 3        # 0-10, float

@@ -640,7 +640,7 @@ def policy_random_modify(tasks):
     return plan
 
 # Based on the plan generated from policy_random(_modify) and replace randomly with tasks of higher rwd => local optimal result
-def policy_random_optimal(tasks, plan, horizon = 1, search_cycle = 3):
+def policy_random_optimal(tasks, plan, horizon = 5, search_cycle = 5):
     # Given:
     #     tasks: from input file
     #     plan: randomly generated plan from policy_random, unsorted, may or may not ordered
@@ -648,44 +648,78 @@ def policy_random_optimal(tasks, plan, horizon = 1, search_cycle = 3):
     #     search_cycle: number of random generation for each task's replacement search
     # Return: new plan with a higher total rwd over the day
 
-    plan_new = {}
-
     # Extract 'strictness' info from input
     strictness = tasks['today']['strictness']
 
+    # Init: copy plan to plan_new
+    plan_new = {}
+    for task in plan:
+        plan_new[task] = plan[task]
+
     for i in range(horizon):
         task_names_copy = task_names[:]
+        task_count = {}
 
         # Search through all the tasks in the plan
         # Not consider about the time limit of each task for now => TODO: future work
 
-        for task_curr in plan.keys():
+        for task_curr in plan_new.keys():
             if task_curr.strip('_') == 'sleeping':
-                plan_new[task_curr] = plan[task_curr]
                 continue
 
-            time = plan[task_curr]['time']
+            time = plan_new[task_curr]['time']
             for j in range(search_cycle):
                 task_replace = random.choice(task_names_copy)
-                rwd_replace = rwd_discrete_modify(time[0], tasks[task_replace], strictness)
-                if rwd_replace > plan[task_curr]['rwd'][0]:
+
+                n = time[0] / T
+                plan_ref = tasks[task_replace]['type']
+                if plan_ref in ['fixed_time']:
+                    rwd_replace = reward_discrete(n, tasks[task_replace], strictness)
+                elif plan_ref in ['fun', 'necessity', 'meal']:
+                    rwd_replace = reward_discrete(n, tasks[task_replace], strictness)
+                    task_names_copy.remove(task_replace)
+                elif plan_ref in ['as_soon_as_possible', 'fixed_ddl']:
+                    rwd_replace = reward_discrete(n - np.ceil((24 - tasks['today']['curr_time']) / T), tasks[task_replace], strictness)
+                    try:
+                        task_count[task_replace] += 1
+                    except:
+                        task_count[task_replace] = 1
+
+                    if task_count[task_replace] * T >= tasks[task_replace]['approx_time'] * procrastination:
+                        task_names_copy.remove(task_replace)
+                elif plan_ref in ['long_term']:
+                    rwd_replace = reward_discrete(T, tasks[task_replace], strictness)
+                    task_names_copy.remove(task_replace)
+
+                if rwd_replace > plan_new[task_curr]['rwd'][0]:
+                    plan_new.pop(task_curr)
+                    j_cycle_flag = True
                     break
                 else:
-                    task_replace = plan[task_curr]['name']
-                    rwd_replace = plan[task_curr]['rwd'][0]
+                    j_cycle_flag = False
+
+            if j_cycle_flag == False:
+                continue
 
             # print('task_curr: '+task_curr+'\ttask_replace: '+task_replace)
             if tasks[task_replace]['type'] not in plan_new.keys():
                 plan_ref = tasks[task_replace]['type']
+            elif tasks[task_replace]['type'] == task_curr.strip('_'):
+                plan_ref = task_curr
             else:
                 count = 0
-                for task_prev in plan_new.keys():
-                    if task_prev.strip('_') == tasks[task_replace]['type']:
+                while True:
+                    plan_ref = tasks[task_replace]['type'] + count * '_'
+                    if plan_ref in plan_new.keys():
                         count += 1
-                plan_ref = tasks[task_replace]['type'] + count * '_'
+                    else:
+                        break
             
             plan_new[plan_ref] = {'name': task_replace, 'time': [time[0], time[1]], 'rwd': []}
             plan_new[plan_ref]['rwd'].append(rwd_replace)
+
+        # Make sure all tasks are in time order in the plan_new
+        plan_new = plan_order(plan_new)
 
     return plan_new
 
@@ -868,14 +902,14 @@ for each in plan.keys():
 # # For output
 # plan={'sleeping':{'time':[0,6],'rwd':[1,2,3,4,5,5]},'breakfast':{'time':[6,8],'rwd':[2,3]},'film':{'time':[8,14],'rwd':[5,2,7,9,1,5]}}
 
+fig2, ax2 = plt.subplots(dpi = 100)
+visualize_plan(plan1, ax2, 'Old')
+plt.tight_layout()
 
 fig, ax = plt.subplots(dpi = 100)
 visualize_plan(plan, ax, 'New')
 plt.tight_layout()
 
-fig2, ax2 = plt.subplots(dpi = 100)
-visualize_plan(plan1, ax2, 'Old')
-plt.tight_layout()
 
 plt.show()
 # fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
