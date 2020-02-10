@@ -360,6 +360,23 @@ def reward_discrete(n, task, strictness, detailed = True, T = T):
     rwd = rwd / count
     return rwd
 
+# Modify 'n' for different meaning of time
+def rwd_discrete_modify(n, task, strictness, detailed = True, T = T):
+    rwd = 0
+
+    plan_ref = task['type']
+
+    if plan_ref in ['fixed_time', 'fun', 'necessity', 'meal']:
+        rwd = reward_discrete(n, task, strictness)
+    elif plan_ref in ['as_soon_as_possible', 'fixed_ddl']:
+        rwd = reward_discrete(n - np.ceil((24 - tasks['today']['curr_time']) / T), task, strictness)
+    elif plan_ref in ['long_term']:
+        rwd = reward_discrete(T, task, strictness)
+    else:
+        raise Exception("Undefined task type for rwd_discrete_modify function!")
+
+    return rwd
+
 # Return task list from input 'tasks' dict, and check task validity
 def input_analysis(tasks):
     # Given: dict of {task_name: task_content}
@@ -507,7 +524,7 @@ def policy_random(tasks):
     # print('Initial random plan: ' + str(plan))
     return plan
 
-# Modify policy_random to consider about approx_time of fixed_ddl and asap tasks
+# Modify rwd func in policy_random to take approx_time into consideration for fixed_ddl and asap tasks => Question: Is it really necessary? Just to generate a moderately better initial plan, for following optimize procedure
 def policy_random_modify(tasks):
     # Init plan
     plan = {}
@@ -599,7 +616,7 @@ def policy_random_modify(tasks):
             for task_prev in plan.keys():
                 if task_prev.strip('_') == tasks[task_curr]['type']:
                     count += 1
-            plan_ref = tasks[task_curr]['type'] + count*'_'
+            plan_ref = tasks[task_curr]['type'] + count * '_'
             plan[plan_ref] = {'name': task_curr, 'time': [n * T, (n + 1) * T], 'rwd': []}
 
             # Modify 'n' for different meaning of time
@@ -623,9 +640,54 @@ def policy_random_modify(tasks):
     return plan
 
 # Based on the plan generated from policy_random(_modify) and replace randomly with tasks of higher rwd => local optimal result
-def policy_random_optimal(tasks):
-    # TODO
-    pass
+def policy_random_optimal(tasks, plan, horizon = 1, search_cycle = 3):
+    # Given:
+    #     tasks: from input file
+    #     plan: randomly generated plan from policy_random, unsorted, may or may not ordered
+    #     horizon: number of cycle to thoroughly search and replace task in each T 
+    #     search_cycle: number of random generation for each task's replacement search
+    # Return: new plan with a higher total rwd over the day
+
+    plan_new = {}
+
+    # Extract 'strictness' info from input
+    strictness = tasks['today']['strictness']
+
+    for i in range(horizon):
+        task_names_copy = task_names[:]
+
+        # Search through all the tasks in the plan
+        # Not consider about the time limit of each task for now => TODO: future work
+
+        for task_curr in plan.keys():
+            if task_curr.strip('_') == 'sleeping':
+                plan_new[task_curr] = plan[task_curr]
+                continue
+
+            time = plan[task_curr]['time']
+            for j in range(search_cycle):
+                task_replace = random.choice(task_names_copy)
+                rwd_replace = rwd_discrete_modify(time[0], tasks[task_replace], strictness)
+                if rwd_replace > plan[task_curr]['rwd'][0]:
+                    break
+                else:
+                    task_replace = plan[task_curr]['name']
+                    rwd_replace = plan[task_curr]['rwd'][0]
+
+            # print('task_curr: '+task_curr+'\ttask_replace: '+task_replace)
+            if tasks[task_replace]['type'] not in plan_new.keys():
+                plan_ref = tasks[task_replace]['type']
+            else:
+                count = 0
+                for task_prev in plan_new.keys():
+                    if task_prev.strip('_') == tasks[task_replace]['type']:
+                        count += 1
+                plan_ref = tasks[task_replace]['type'] + count * '_'
+            
+            plan_new[plan_ref] = {'name': task_replace, 'time': [time[0], time[1]], 'rwd': []}
+            plan_new[plan_ref]['rwd'].append(rwd_replace)
+
+    return plan_new
 
 # Policy traversal: list all possible plans, calculate the plan with the max rwd
 def policy_traversal(tasks):
@@ -649,6 +711,23 @@ def policy_traversal(tasks):
     # TODO
 
     return plan
+
+# Make the tasks in the time order
+def plan_order(plan):
+    newplan = {}
+    task_names = list(plan.keys())
+
+    # All the tasks in the same order
+    time_list = []
+    for task in task_names:
+        time_list.append(plan[task]['time'][0])
+    time_index = np.argsort(time_list)
+    task_names = list(np.array(task_names)[time_index])
+    
+    for i in range(len(plan)):
+        newplan[task_names[i]] = plan[task_names[i]]
+
+    return newplan
 
 # Make the 'Initial plan' more neat: same continuous task in the same dict.key, all the tasks in the time order
 def plan_sort(plan):
@@ -683,7 +762,7 @@ def plan_sort(plan):
 
 # Visualize resulting plan for output
 # E.g.: plan={'sleeping': {'time': [0, 6], 'rwd':[1, 2, 3, 4, 5, 4]}, 'breakfast': {'time': [6, 8], 'rwd': [2, 3]}}
-def visualize_plan(plan, ax):
+def visualize_plan(plan, ax, title = 'Time Schedule Planner'):
     # plan: type: dict, keys: task name, same as input file; each task: also dict, keys: 'time', 'rwd'; 'time': list, the beginning and ending hour of the day, 'rwd': discrete current reward corresponding discrete time period
 
     title_font = {'fontname': 'Arial', 'fontsize': 14, 'color': 'black', 'weight': 'bold', 'va': 'bottom'}
@@ -745,7 +824,7 @@ def visualize_plan(plan, ax):
     ax.grid(alpha = 0.5, linestyle = 'dashed', linewidth = 0.5)
 
     # Add plot labels
-    ax.set_title('Time Schedule Planner', **title_font)
+    ax.set_title(title, **title_font)
     ax.set_xlabel('Time', **axis_font)
     ax.set_ylabel('Reward Value', **axis_font)
 
@@ -763,7 +842,12 @@ tasks = inputYAML()
 
 # # For policy test
 task_names = input_analysis(tasks)
-plan = policy_random_modify(tasks)
+plan1 = policy_random(tasks)
+plan1 = plan_order(plan1)
+for each in plan1.keys():
+    print("'"+str(each)+"': "+str(plan1[each])+', \\')
+print('\n\n')
+plan = policy_random_optimal(tasks, plan1)
 plan = plan_sort(plan)
 for each in plan.keys():
     print("'"+str(each)+"': "+str(plan[each])+', \\')
@@ -783,8 +867,15 @@ for each in plan.keys():
 
 # # For output
 # plan={'sleeping':{'time':[0,6],'rwd':[1,2,3,4,5,5]},'breakfast':{'time':[6,8],'rwd':[2,3]},'film':{'time':[8,14],'rwd':[5,2,7,9,1,5]}}
+
+
 fig, ax = plt.subplots(dpi = 100)
-visualize_plan(plan, ax)
+visualize_plan(plan, ax, 'New')
 plt.tight_layout()
+
+fig2, ax2 = plt.subplots(dpi = 100)
+visualize_plan(plan1, ax2, 'Old')
+plt.tight_layout()
+
 plt.show()
 # fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')

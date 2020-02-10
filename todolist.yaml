@@ -3,7 +3,7 @@ today:                  # better to use for the next day and more than one day
     type: today
     curr_time: 24       # current time (=next integer hour): 13:00, for the start of the planner
     day: 1              # 1-7 for Mon.-Sun., for fixed_time tasks
-    strictness: 0.7     # 0-1 for balance between enjoyment and productivity
+    strictness: 0.5     # 0-1 for balance between enjoyment and productivity
 
 sleeping:
     name: sleeping
