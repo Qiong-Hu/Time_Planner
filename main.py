@@ -313,6 +313,14 @@ def rwd_sleeping(x, bedtime, duration, sleeping, strictness, T = T):
     else:
         raise Exception("Wrong reward function for non-sleeping task")
 
+# Given inputs, Return potential possible bedtime and duration choices (in a discrete form)
+def sleeping_choices(sleeping, T = T):
+    # Assume bedtime_min ∈ [21, 24], bedtime_max ∈ [0, 4] for now => TODO: future extension for bedtime_min ∈ [0, 4]
+    # 'bedtime_list', 'duration_list': discrete choice list for 'bedtime' and 'duration'
+    bedtime_list = np.arange(sleeping['bedtime_min'] - 24, sleeping['bedtime_max'] + T, T)
+    duration_list = np.arange(sleeping['duration_min'], sleeping['duration_max'] + T, T)
+    return bedtime_list, duration_list
+
 # Contineous reward value in the contineous time space, for all tasks
 def reward_contineous(x, task, strictness):
     # x: time slot (different def for different task)
@@ -641,8 +649,114 @@ def policy_random_modify(tasks):
     # print('Initial random plan: ' + str(plan))
     return plan
 
+# Given fixed bedtime and sleeping duration, randomly generate a plan (similar to 'policy_random' function)
+def policy_random_given_sleeping(tasks, bedtime, duration):
+    # Init plan
+    plan = {}
+
+    # Extract 'strictness' info from input
+    strictness = tasks['today']['strictness']
+
+    # Plan about 'sleeping'
+    sleeping = tasks['sleeping']
+    getup_min = np.mod(sleeping['bedtime_min'] + sleeping['duration_min'], 24) # Assume getup_min > 0 (for now)
+    getup_max = np.mod(sleeping['bedtime_max'] + sleeping['duration_max'], 24)
+
+    # Assume bedtime_min ∈ [21, 24], bedtime_max ∈ [0, 4] for now => TODO: future extension for bedtime_min ∈ [0, 4]
+    # 'bedtime_list', 'duration_list': discrete choice list for 'bedtime' and 'duration'
+    bedtime_list, duration_list = sleeping_choices(sleeping, T)
+    # bedtime = random.choice(bedtime_list)
+    # duration = random.choice(duration_list)
+    if bedtime not in bedtime_list:
+        raise Exception('Wrong input of bedtime in policy_random_given_sleeping function')
+    if duration not in duration_list:
+        raise Exception('Wrong input of duration in policy_random_given_sleeping function')
+    print('bedtime: ' + str(np.mod(bedtime, 24)) + ':00\tduration: ' + str(duration) + 'h\tgetup time: ' + str(bedtime + duration) + ':00')
+
+    # Sleep before 24:00
+    plan['sleeping'] = {'name': 'sleeping'}
+    if bedtime <= 0:
+        plan['sleeping']['time'] = [0, bedtime + duration]
+        plan['sleeping']['rwd'] = []
+        for x in np.arange(0, bedtime + duration, T):
+            plan['sleeping']['rwd'].append(rwd_sleeping(x, np.mod(bedtime, 24), duration, sleeping, strictness))
+    else:
+        plan['N/A'] = {'name': 'N/A', 'time': [0, bedtime], 'rwd': list(np.arange(0, bedtime, T) * 0)}
+        plan['sleeping']['time'] = [bedtime, bedtime + duration]
+        plan['sleeping']['rwd'] = []
+        for x in np.arange(bedtime, bedtime + duration, T):
+            plan['sleeping']['rwd'].append(rwd_sleeping(x, bedtime, duration, sleeping, strictness))
+
+    if bedtime < 0:
+        # Because circulant or symmetric
+        plan['sleeping_'] = {'name': 'sleeping', 'time': [bedtime + 24, 24], 'rwd': []}
+        for x in np.arange(bedtime + 24, 24, T):
+            plan['sleeping_']['rwd'].append(rwd_sleeping(x, bedtime + 24, duration, sleeping, strictness))
+
+    # Assume the daily plan is circulant (a.k.a. bedtime for the next day = bedtime of the planned day)
+    if bedtime <= 0:
+        # Active until before 24:00, then go to sleep (add another segment of sleeping)
+        activetime = bedtime + 24
+    else:
+        # Active until 24:00
+        activetime = 24
+
+    # If bedtime after 0:00, extra time for other tasks
+    time_list = list(np.arange(np.ceil((bedtime + duration) / T), np.floor(activetime / T), T))
+    if 'N/A' in plan.keys():
+        time_NA = plan['N/A']['time']
+        time_list.extend(np.arange(np.ceil(time_NA[0] / T), np.floor(time_NA[1] / T), T))
+        plan.pop('N/A')
+
+    # Add random tasks into 'plan'
+    task_names_copy = task_names[:]
+    for n in time_list:
+        task_curr = random.choice(task_names_copy)
+        if tasks[task_curr]['type'] not in plan.keys():
+            plan_ref = tasks[task_curr]['type']
+            plan[plan_ref] = {'name': task_curr, 'time': [n * T, (n + 1) * T], 'rwd': []}
+
+            # Modify 'n' for different meaning of time
+            if plan_ref in ['fixed_time']:
+                rwd = reward_discrete(n, tasks[task_curr], strictness)
+            elif plan_ref in ['fun', 'necessity', 'meal']:
+                rwd = reward_discrete(n, tasks[task_curr], strictness)
+                task_names_copy.remove(task_curr)
+            elif plan_ref in ['as_soon_as_possible', 'fixed_ddl']:
+                rwd = reward_discrete(n - np.ceil((24 - tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
+            elif plan_ref in ['long_term']:
+                rwd = reward_discrete(T, tasks[task_curr], strictness)
+                task_names_copy.remove(task_curr)   # TODO: may not remove if T≠1: count the number of the long_term tasks => modify the rwd value
+
+            plan[plan_ref]['rwd'].append(rwd)
+        else:
+            count = 0
+            for task_prev in plan.keys():
+                if task_prev.strip('_') == tasks[task_curr]['type']:
+                    count += 1
+            plan_ref = tasks[task_curr]['type'] + count*'_'
+            plan[plan_ref] = {'name': task_curr, 'time': [n * T, (n + 1) * T], 'rwd': []}
+
+            # Modify 'n' for different meaning of time
+            if plan_ref.strip('_') in ['fixed_time']:
+                rwd = reward_discrete(n, tasks[task_curr], strictness)
+            elif plan_ref.strip('_') in ['fun', 'necessity', 'meal']:
+                rwd = reward_discrete(n, tasks[task_curr], strictness)
+                task_names_copy.remove(task_curr)
+            elif plan_ref.strip('_') in ['as_soon_as_possible', 'fixed_ddl']:
+                rwd = reward_discrete(n - np.ceil((24 - tasks['today']['curr_time']) / T), tasks[task_curr], strictness)
+            elif plan_ref.strip('_') in ['long_term']:
+                rwd = reward_discrete(T, tasks[task_curr], strictness)
+                task_names_copy.remove(task_curr)
+
+            plan[plan_ref]['rwd'].append(rwd)
+
+    plan = plan_order(plan)
+    # print('Initial random plan: ' + str(plan))
+    return plan
+
 # Based on the plan generated from policy_random(_modify) and replace randomly with tasks of higher rwd => local optimal result
-def policy_random_optimal(tasks, plan, horizon = 5, search_cycle = 5):
+def policy_random_optimal(tasks, plan, horizon = 5, search_cycle = 7):
     # Given:
     #     tasks: from input file
     #     plan: randomly generated plan from policy_random, unsorted, may or may not ordered
@@ -871,7 +985,25 @@ def plan_rwd(plan):
 
 # Traverse through all the bedtime and sleeping duration, use 'policy_random_optimal_disposal' to find the local optimal within the given 'horizon' and 'search_cycle'; compare all the optimals and return the max rwd
 def policy_random_traversal(tasks, horizon = 5, search_cycle = 5):
-    pass
+    plan_max = {}
+    rwd_max = 0
+
+    bedtime_list, duration_list = sleeping_choices(tasks['sleeping'])
+    for bedtime in bedtime_list:
+        for duration in duration_list:
+            plan = policy_random_given_sleeping(tasks, bedtime, duration)
+            plan = policy_random_optimal_disposal(tasks, plan)
+            rwd = plan_rwd(plan)
+            if rwd > rwd_max:
+                rwd_max = rwd
+                plan_max = {}
+                for task in plan.keys():
+                    plan_max[task] = plan[task]
+
+            del plan, rwd
+
+    print('Reward max: ' + str(rwd_max))
+    return plan_max
 
 # Policy traversal: list all possible plans, calculate the plan with the max rwd
 def policy_traversal_all(tasks):
@@ -1012,53 +1144,85 @@ def visualize_plan(plan, ax, title = 'Time Schedule Planner'):
     ax.set_xlabel('Time', **axis_font)
     ax.set_ylabel('Reward Value', **axis_font)
 
+# All the demo examples and policy test
+def tests(num):
+    if num == 1:        # Pure random generation
+        plan = policy_random(tasks)
+        plan = plan_sort(plan)
+        for each in plan.keys():
+            print("'"+str(each)+"': "+str(plan[each])+', \\')
+    elif num == 2:      # Modify random: remove disposal
+        plan = policy_random_modify(tasks)
+        plan = plan_sort(plan)
+        for each in plan.keys():
+            print("'"+str(each)+"': "+str(plan[each])+', \\')
+    elif num == 3:      # Recurrence to find better
+        plan1 = policy_random(tasks)
+        for each in plan1.keys():
+            print("'"+str(each)+"': "+str(plan1[each])+', \\')
 
+        plan = policy_random_optimal(tasks, plan1, 5, 7)
+        plan = plan_sort(plan)
+        for each in plan.keys():
+            print("'"+str(each)+"': "+str(plan[each])+', \\')
+    elif num == 4:      # Recurrence and include disposal
+        plan1 = policy_random(tasks)
+        for each in plan1.keys():
+            print("'"+str(each)+"': "+str(plan1[each])+', \\')
 
+        plan = policy_random_optimal_disposal(tasks, plan1, 5, 7)
+        plan = plan_sort(plan)
+        for each in plan.keys():
+            print("'"+str(each)+"': "+str(plan[each])+', \\')
+    elif num == 5:      # Traverse over recurrence to find max_rwd within given cycle number
+        plan = policy_random_traversal(tasks, 5, 5)
+        plan = plan_sort(plan)
+        for each in plan.keys():
+            print("'"+str(each)+"': "+str(plan[each])+', \\')
+
+    # Show the results
+    fig, ax = plt.subplots(dpi = 100)
+    visualize_plan(plan, ax, 'New Planner')
+    plt.tight_layout()
+
+    if num in [3, 4]:
+        fig2, ax2 = plt.subplots(dpi = 100)
+        visualize_plan(plan1, ax2, 'Old Planner')
+        plt.tight_layout()
+
+    plt.show()
 
 # # Tests
 # # For input test and debug
 tasks = inputYAML()
-# reward_contineous(10,tasks['dinner'],0.5)
-# print(tasks)
-# print(tasks['dinner'])
-# print(len(tasks))
-
-
-# # For policy test
 task_names = input_analysis(tasks)
-plan1 = policy_random(tasks)
-for each in plan1.keys():
-    print("'"+str(each)+"': "+str(plan1[each])+', \\')
-print('\n\n')
-plan = policy_random_optimal_disposal(tasks, plan1)
-plan = plan_sort(plan)
-for each in plan.keys():
-    print("'"+str(each)+"': "+str(plan[each])+', \\')
+
+tests(5)
 
 
-# # For rwd func test and debug
-# lab={"type":"as_soon_as_possible", "approx_time": 2, "enjoyment": 6, "productivity": 6}
-# sleeping={"type":"sleeping","duration_min":5,"duration_max":12,"bedtime_min":22,"bedtime_max":4,"enjoyment":6,"productivity":2}
-# house={"type":"necessity","time":[17],"duration":0.75,"enjoyment":0,"productivity":10}
-# x=np.linspace(15,20,100)
-# y=[]
-# for eachx in x:
-#     y.append(reward_contineous(eachx,house,0.5))
-# y=np.array(y)
-# plt.plot(x,y,"r")
-# plt.show()
+
+# # For policy tests and debugs
+# plan1 = policy_random(tasks)
+# for each in plan1.keys():
+#     print("'"+str(each)+"': "+str(plan1[each])+', \\')
+# print('\n\n')
+# plan = policy_random_optimal_disposal(tasks, plan1)
+# plan = policy_random_traversal(tasks)
+# plan = plan_sort(plan)
+# for each in plan.keys():
+#     print("'"+str(each)+"': "+str(plan[each])+', \\')
+
 
 # # For output
 # plan={'sleeping':{'time':[0,6],'rwd':[1,2,3,4,5,5]},'breakfast':{'time':[6,8],'rwd':[2,3]},'film':{'time':[8,14],'rwd':[5,2,7,9,1,5]}}
 
-fig2, ax2 = plt.subplots(dpi = 100)
-visualize_plan(plan1, ax2, 'Old')
-plt.tight_layout()
+# fig2, ax2 = plt.subplots(dpi = 100)
+# visualize_plan(plan1, ax2, 'Old')
+# plt.tight_layout()
 
-fig, ax = plt.subplots(dpi = 100)
-visualize_plan(plan, ax, 'New')
-plt.tight_layout()
+# fig, ax = plt.subplots(dpi = 100)
+# visualize_plan(plan, ax, 'New')
+# plt.tight_layout()
 
-
-plt.show()
+# plt.show()
 # fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')

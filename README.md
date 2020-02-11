@@ -83,3 +83,28 @@ Therefore, for me, the parameters are: $dur_{min} = 5, dur_{max} = 12, bed_{min}
 #### Daily-necessity tasks
 
 ![rwd func for necessity tasks](img/necessity.jpg)
+
+## Decision-making algorithms
+
+### Random generation
+
+
+### Sorting and ordering the random plan
+
+
+
+### Pure random planner
+
+
+### Limit numbers of trivial tasks
+
+
+### Recurrence to find better schedule
+
+
+### Recurrence and limit numbers of trivial tasks
+
+
+### Traverse over all possible sleeping time choices
+
+
