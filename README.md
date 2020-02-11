@@ -1,6 +1,6 @@
 # Autonomous Time Management Planner (ATMP)
 
-Updated: January 26, 2020, by June Hu
+Updated: February 10, 2020, by June Hu
 
 This task scheduler (a.k.a. time planner) aims to automatically, scientifically schedule various activities for students. 
 
@@ -105,3 +105,13 @@ Therefore, for me, the parameters are: $dur_{min} = 5, dur_{max} = 12, bed_{min}
 ### Traverse over all possible sleeping time choices
 
 ![demo5](img/demo5-traversal.png)
+
+## Traversal result with different strictivity
+
+### strictivity = 0
+
+![demo5-strict=0](demo5-strict=0.png)
+
+### strictivity = 1
+
+![demo5-strict=1](demo5-strict=1.png)

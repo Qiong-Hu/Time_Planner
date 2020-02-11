@@ -3,8 +3,8 @@
 =================== License Information ===================
 Author:     June Hu
 Email:      junesirius@ucla.edu
-Version:    Ver 2.0.0
-Date:       January 30, 2020
+Version:    Ver 3.0.0
+Date:       February 10, 2020
 '''
 
 import numpy as np
@@ -1181,24 +1181,24 @@ def tests(num):
             print("'"+str(each)+"': "+str(plan[each])+', \\')
 
     # Show the results
-    fig, ax = plt.subplots(dpi = 100)
+    fig, ax = plt.subplots(dpi = 200)
     visualize_plan(plan, ax, 'New Planner')
     plt.tight_layout()
 
     if num in [3, 4]:
-        fig2, ax2 = plt.subplots(dpi = 100)
+        fig2, ax2 = plt.subplots(dpi = 200)
         visualize_plan(plan1, ax2, 'Old Planner')
         plt.tight_layout()
 
-    plt.show()
-    # fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
+    # plt.show()
+    fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
 
 # # Tests
 # # For input test and debug
 tasks = inputYAML()
 task_names = input_analysis(tasks)
 
-tests(1)
+tests(5)
 
 
 
