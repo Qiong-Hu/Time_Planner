@@ -724,13 +724,58 @@ def policy_random_optimal(tasks, plan, horizon = 5, search_cycle = 5):
 
     return plan_new
 
-# Remove disposable tasks (tasks that only need to do once every day) and replace by random
-# TODO 
+# Remove disposable tasks (tasks that only need to do once every day)
+# Disposable task type includes: 'fun', 'necessity', 'meal', 'long_term'
+# Special disposable task type includes: 'as_soon_as_possible', 'fixed_ddl' that exceeds approx_time * procrastination => TODO: future work, not consider for now
 def policy_sort_disposable(tasks, plan):
-    pass
+    # Given: 
+    #     tasks: dictionary of all the task info
+    #     plan: origional plan to be sorted
+    # Return: newplan: remove repetitive disposable tasks by other tasks
 
-# Apply disposable-task-removal in every 'horizon' cycle in 'policy_random_optimal'
-def policy_random_optimal_modify(tasks, plan, horizon = 5, search_cycle = 5):
+    # Define disposable task list
+    disposable_tasks = ['fun', 'necessity', 'meal', 'long_term']
+
+    # Init: copy plan to newplan
+    newplan = {}
+    for task in plan.keys():
+        newplan[task] = plan[task]
+
+    task_names_copy = task_names[:]
+    removed_task_names = []
+    task_count = {}
+
+    for task_curr in plan.keys():
+        task_name = plan[task_curr]['name']
+        try:
+            task_count[task_name].append(task_curr)
+        except:
+            task_count[task_name] = [task_curr]
+
+            if task_curr.strip('_') in disposable_tasks: 
+                task_names_copy.remove(task_name)
+                removed_task_names.append(task_name)
+
+    for removed_task_name in removed_task_names:
+        if len(task_count[removed_task_name]) > 1:
+            remain_task = random.choice(task_count[removed_task_name])
+            for removed_task in task_count[removed_task_name]:
+                if removed_task != remain_task:
+                    count = 0
+                    while True:
+                        NA_ref = 'NA' + count * '_'
+                        if NA_ref not in newplan.keys():
+                            break
+                        else:
+                            count += 1
+                    newplan[NA_ref] = {'name': 'N/A', 'time': newplan[removed_task]['time'], 'rwd': [0]}
+                    newplan.pop(removed_task)
+
+    newplan = plan_order(newplan)
+    return newplan
+
+# Apply disposable task removal in every 'horizon' cycle in 'policy_random_optimal'
+def policy_random_optimal_disposal(tasks, plan, horizon = 5, search_cycle = 7):
     # Given:
     #     tasks: from input file
     #     plan: randomly generated plan from policy_random, unsorted, may or may not ordered
@@ -750,9 +795,11 @@ def policy_random_optimal_modify(tasks, plan, horizon = 5, search_cycle = 5):
         task_names_copy = task_names[:]
         task_count = {}
 
+        # Remove extra disposable tasks; wait to enter next optimizing 'horizon' loop
+        plan_new = policy_sort_disposable(tasks, plan_new)
+
         # Search through all the tasks in the plan
         # Now consider about the time limit of each task for now
-
         for task_curr in plan_new.keys():
             if task_curr.strip('_') == 'sleeping':
                 continue
@@ -813,9 +860,21 @@ def policy_random_optimal_modify(tasks, plan, horizon = 5, search_cycle = 5):
 
     return plan_new
 
+# Calculate total reward from a given complete plan
+def plan_rwd(plan):
+    reward = 0
+    for task in plan.keys():
+        for rwd in plan[task]['rwd']:
+            reward += rwd
+
+    return reward
+
+# Traverse through all the bedtime and sleeping duration, use 'policy_random_optimal_disposal' to find the local optimal within the given 'horizon' and 'search_cycle'; compare all the optimals and return the max rwd
+def policy_random_traversal(tasks, horizon = 5, search_cycle = 5):
+    pass
+
 # Policy traversal: list all possible plans, calculate the plan with the max rwd
-# TODO
-def policy_traversal(tasks):
+def policy_traversal_all(tasks):
     # Init plan, plan_list (all possible plans)
     plan = {}
     plan_list = []
@@ -971,7 +1030,7 @@ plan1 = policy_random(tasks)
 for each in plan1.keys():
     print("'"+str(each)+"': "+str(plan1[each])+', \\')
 print('\n\n')
-plan = policy_random_optimal(tasks, plan1)
+plan = policy_random_optimal_disposal(tasks, plan1)
 plan = plan_sort(plan)
 for each in plan.keys():
     print("'"+str(each)+"': "+str(plan[each])+', \\')
