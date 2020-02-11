@@ -1191,13 +1191,14 @@ def tests(num):
         plt.tight_layout()
 
     plt.show()
+    # fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
 
 # # Tests
 # # For input test and debug
 tasks = inputYAML()
 task_names = input_analysis(tasks)
 
-tests(5)
+tests(1)
 
 
 

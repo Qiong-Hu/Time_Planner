@@ -88,23 +88,20 @@ Therefore, for me, the parameters are: $dur_{min} = 5, dur_{max} = 12, bed_{min}
 
 ### Random generation
 
-
-### Sorting and ordering the random plan
-
-
-
-### Pure random planner
-
+![demo1](img/demo1-pure-random.png)
 
 ### Limit numbers of trivial tasks
 
+![demo2](img/demo2-disposable.png)
 
 ### Recurrence to find better schedule
 
+![demo3](img/demo3-recurrence.png)
 
 ### Recurrence and limit numbers of trivial tasks
 
+![demo4](img/demo4-recurrence-disposable.png)
 
 ### Traverse over all possible sleeping time choices
 
-
+![demo5](img/demo5-traversal.png)
