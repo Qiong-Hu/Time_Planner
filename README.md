@@ -114,12 +114,12 @@ rwd_max = 78.55809001494876
 
 ### strictivity = 0
 
-![demo5-strict=0](demo5-strict=0.png)
+![demo5-strict=0](img/demo5-strict=0.png)
 
 rwd_max = 97.56982887318202
 
 ### strictivity = 1
 
-![demo5-strict=1](demo5-strict=1.png)
+![demo5-strict=1](img/demo5-strict=1.png)
 
 rwd_max = 70.54294748768503
