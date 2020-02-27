@@ -1,4 +1,4 @@
-# Autonomous Time Management Planner (ATMP)
+# Auto Time Management Planner (ATMP)
 
 Updated: February 10, 2020, by June Hu
 
@@ -44,7 +44,15 @@ $$
 rwd = rwd_{bed} * rwd_{dur}.
 $$
 
-The diagrams of ![3D function curve](img/3D-bedtime_duration.jpg) and ![2D function curve](img/func-bedtime_duration.jpg) show the dependent relationships. It makes sense that if I sleep really late (e.g. 4am), even if sleeping for a long period of time cannot undo the harm from the stay up to the body.
+The diagrams of 
+
+![3D function curve](img/3D-bedtime_duration.jpg)
+
+and 
+
+![2D function curve](img/func-bedtime_duration.jpg)
+
+show the dependent relationships. It makes sense that if I sleep really late (e.g. 4am), even if sleeping for a long period of time cannot undo the harm from the stay up to the body.
 
 Therefore, for me, the parameters are: $dur_{min} = 5, dur_{max} = 12, bed_{min} = 22, bed_{max} = 4$, and here is a diagram of reward to each pair of \{$duration$, $bedtime$\} in a discrete time step.
 
@@ -106,19 +114,19 @@ Therefore, for me, the parameters are: $dur_{min} = 5, dur_{max} = 12, bed_{min}
 
 ![demo5](img/demo5-traversal.png)
 
-strictivity = 0.5
+strictness = 0.5
 
 rwd_max = 78.55809001494876
 
-## Traversal result with different strictivity
+## Traversal result with different strictness
 
-### strictivity = 0
+### strictness = 0
 
 ![demo5-strict=0](img/demo5-strict=0.png)
 
 rwd_max = 97.56982887318202
 
-### strictivity = 1
+### strictness = 1
 
 ![demo5-strict=1](img/demo5-strict=1.png)
 

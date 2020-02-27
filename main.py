@@ -253,7 +253,7 @@ def rwd_meal(x, task, strictness):
     if task["type"] == "meal":
         time = task["time"]
         reward = rwd_after_strict(strictness, task["enjoyment"], task["productivity"])
-        y = reward * func_meal(x, time[0], time[1])
+        y = reward * func_meal(x, time[0], time[1]) + 0.5
         return y
     else:
         raise Exception("Wrong reward function for non-meal task")
@@ -849,14 +849,15 @@ def policy_sort_disposable(tasks, plan):
 
     # Define disposable task list
     disposable_tasks = ['fun', 'necessity', 'meal', 'long_term']
+    limited_tasks = ['fixed_ddl', 'as_soon_as_possible']
 
     # Init: copy plan to newplan
     newplan = {}
     for task in plan.keys():
         newplan[task] = plan[task]
 
-    task_names_copy = task_names[:]
     removed_task_names = []
+    limited_task_names = []
     task_count = {}
 
     for task_curr in plan.keys():
@@ -867,8 +868,9 @@ def policy_sort_disposable(tasks, plan):
             task_count[task_name] = [task_curr]
 
             if task_curr.strip('_') in disposable_tasks: 
-                task_names_copy.remove(task_name)
                 removed_task_names.append(task_name)
+            elif task_curr.strip('_') in limited_tasks:
+                limited_task_names.append(task_name)
 
     for removed_task_name in removed_task_names:
         if len(task_count[removed_task_name]) > 1:
@@ -884,6 +886,25 @@ def policy_sort_disposable(tasks, plan):
                             count += 1
                     newplan[NA_ref] = {'name': 'N/A', 'time': newplan[removed_task]['time'], 'rwd': [0]}
                     newplan.pop(removed_task)
+
+    for limited_task_name in limited_task_names:
+        extra_time = np.floor(len(limited_task_name) - tasks[limited_task_name]['approx_time'] * procrastination / T)
+        # TODO: to debug
+        print()
+        # print('approx_time:'+str(tasks[limited_task_name]['approx_time']))
+        if extra_time > 0:
+            # print('limited_task_name:'+str(limited_task_name))
+            removed_limited_task_names = np.random.choice(limited_task_name, extra_time)
+            for removed_limited_task_name in removed_limited_task_names:
+                count = 0
+                while True:
+                    NA_ref = 'NA' + count * '_'
+                    if NA_ref not in newplan.keys():
+                        break
+                    else:
+                        count += 1
+                newplan[NA_ref] = {'name': 'N/A', 'time': newplan[removed_limited_task_name]['time'], 'rwd': [0]}
+                newplan.pop(removed_limited_task_name)
 
     newplan = plan_order(newplan)
     return newplan
@@ -975,11 +996,22 @@ def policy_random_optimal_disposal(tasks, plan, horizon = 5, search_cycle = 7):
     return plan_new
 
 # Calculate total reward from a given complete plan
-def plan_rwd(plan):
+def plan_rwd(plan, sleeping = True):
+    # sleeping: True: Multiply sleeping rwd; False: Add it with others
     reward = 0
-    for task in plan.keys():
-        for rwd in plan[task]['rwd']:
-            reward += rwd
+    if not sleeping:
+        for task in plan.keys():
+            for rwd in plan[task]['rwd']:
+                reward += rwd
+    elif sleeping:
+        sleeping_rwd = plan['sleeping']['rwd'][0]
+        for task in plan.keys():
+            if task.strip('_') == 'sleeping':
+                continue
+            else:
+                for rwd in plan[task]['rwd']:
+                    reward += rwd
+        reward = reward * sleeping_rwd
 
     return reward
 
@@ -1006,6 +1038,7 @@ def policy_random_traversal(tasks, horizon = 5, search_cycle = 5):
     return plan_max
 
 # Policy traversal: list all possible plans, calculate the plan with the max rwd
+# TODO
 def policy_traversal_all(tasks):
     # Init plan, plan_list (all possible plans)
     plan = {}
@@ -1161,7 +1194,7 @@ def tests(num):
         for each in plan1.keys():
             print("'"+str(each)+"': "+str(plan1[each])+', \\')
 
-        plan = policy_random_optimal(tasks, plan1, 5, 7)
+        plan = policy_random_optimal(tasks, plan1, 20, 10)
         plan = plan_sort(plan)
         for each in plan.keys():
             print("'"+str(each)+"': "+str(plan[each])+', \\')
@@ -1170,35 +1203,35 @@ def tests(num):
         for each in plan1.keys():
             print("'"+str(each)+"': "+str(plan1[each])+', \\')
 
-        plan = policy_random_optimal_disposal(tasks, plan1, 5, 7)
+        plan = policy_random_optimal_disposal(tasks, plan1, 20, 10)
         plan = plan_sort(plan)
         for each in plan.keys():
             print("'"+str(each)+"': "+str(plan[each])+', \\')
     elif num == 5:      # Traverse over recurrence to find max_rwd within given cycle number
-        plan = policy_random_traversal(tasks, 5, 5)
+        plan = policy_random_traversal(tasks, 10, 10)
         plan = plan_sort(plan)
         for each in plan.keys():
             print("'"+str(each)+"': "+str(plan[each])+', \\')
 
     # Show the results
-    fig, ax = plt.subplots(dpi = 200)
-    visualize_plan(plan, ax, 'New Planner')
+    fig, ax = plt.subplots(dpi = 170)
+    visualize_plan(plan, ax)
     plt.tight_layout()
 
-    if num in [3, 4]:
-        fig2, ax2 = plt.subplots(dpi = 200)
-        visualize_plan(plan1, ax2, 'Old Planner')
-        plt.tight_layout()
+    # if num in [3, 4]:
+    #     fig2, ax2 = plt.subplots(dpi = 100)
+    #     visualize_plan(plan1, ax2, 'Old Planner')
+    #     plt.tight_layout()
 
-    # plt.show()
-    fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
+    plt.show()
+    # fig.savefig("planner.png", dpi = 200, bbox_inches = 'tight')
 
 # # Tests
 # # For input test and debug
 tasks = inputYAML()
 task_names = input_analysis(tasks)
 
-tests(5)
+tests(4)
 
 
 

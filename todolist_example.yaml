@@ -1,0 +1,94 @@
+today:                  # better to use for the next day and more than one day
+    name: today
+    type: today
+    curr_time: 24       # current time (=next integer hour): 13:00, for the start of the planner
+    day: 1              # 1-7 for Mon.-Sun., for fixed_time tasks
+    strictness: 0.5     # 0-1 for balance between enjoyment and productivity
+
+sleeping:
+    name: sleeping
+    type: sleeping
+    duration_min: 5     # sleeping duration: 5-12 hours
+    duration_max: 12
+    bedtime_min: 22     # bedtime range suggestion: 22:00-4:00
+    bedtime_max: 4
+    enjoyment: 6        # enjoyment: 0-10, float
+    productivity: 2     # coefficient at bedtime_min and duration_max
+                        # true productivity over time depends on bedtime and duration
+                        # multiply by productivity of other tasks
+
+lecture:                # can be renamed to "lecture 1, 2, 3"etc, or the name of the lectuure
+    name: lecture
+    type: fixed_time    # e.g.: lectures, mandetory commitments, appointments
+    day:                # 1-7 for Mon.-Sun.
+        - 2             # have classes on Tue. and Thu.
+        - 4
+    start: 14           # format: in 24h; fixed time start at 14:00
+    duration: 2         # duration: 2 hours
+    switch: 0.25        # switch time: 15 minutes of transportation; also can be time needed to refocus after switch to a new task
+    enjoyment: 5        # 0-10, float
+    productivity: 8     # 0-10, float, the larger, the more important
+
+hw:
+    name: hw
+    type: fixed_ddl     # e.g.: homework, assignments, paper due, preparation for exams
+    approx_time: 4      # approximate required time: 3 hours, extended by certain percentage (like 40%) in the main planner function
+    deadline: 24        # deadline in 10 hours
+    switch: 0.1         # switch time: 6 minutes; for preparation before hw, time to focus
+    enjoyment: 1        # 0-10, float
+    productivity: 5     # 0-10, float, the larger, the more important
+
+email:
+    name: email
+    type: as_soon_as_possible   # e.g.: reading emails, reply messages
+    approx_time: 2      # approximate required time: 2 hours, extended by certain percentage (like 40%) in the main planner function
+    switch: 0.2         # switch time: 12 minutes, from deciding to do to actually begin to work
+    enjoyment: 5        # 0-10, float
+    productivity: 6     # 0-10, float, the larger, the more important
+
+reading:
+    name: reading
+    type: fun           # e.g.: entertainments, reading, writing, shopping, films, social
+    enjoyment: 7        # 0-10, float
+    productivity: 1     # 0-10, float
+
+language:
+    name: language
+    type: long_term     # e.g.: exercise, learn new language, practice musical instrument
+    insist_day: 2       # insisted for 2 days, update every time of imiplementation
+    duration_max: 1.5   # maximum duration time for one day: 1.5h
+    enjoyment: 3        # 0-10, float
+    productivity: 3     # 0-10, float
+
+housekeeping:
+    name: housekeeping
+    type: necessity     # e.g.: housekeeping, showering, brushing teeth, cooking
+    time: []            # preferred time for the activity: if empty then anytime is ok, if has 1 param then it's the optimal, if has 2 param then during the period is the optimal
+    duration: 1         # 1h
+    enjoyment: 0        # 0-10, float
+    productivity: 2     # 0-10, float
+
+breakfast:
+    name: breakfast
+    type: meal
+    time: [7, 10]       # breakfast at 7:00-10:00
+    duration: 0.33      # 20 mins
+    enjoyment: 3        # 0-10, float
+    productivity: 0     # 0-10, float
+
+lunch:
+    name: lunch
+    type: meal
+    time: [11, 14]      # lunch at 11:00-14:00
+    duration: 0.5       # 0.5 hours
+    enjoyment: 3        # 0-10, float
+    productivity: 0     # 0-10, float
+
+dinner:
+    name: dinner
+    type: meal
+    time: [17, 20]      # dinner at 17:00-20:00
+    duration: 1         # 1 hour, not including cooking (cooking is necessity)
+    enjoyment: 4        # 0-10, float
+    productivity: 0     # 0-10, float
+
