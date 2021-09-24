@@ -1,4 +1,4 @@
-# Automatic Time Management Planner (ATMP)
+# Automatic Time Planner for Daily Task Management
 
 Updated: February 10, 2020
 
