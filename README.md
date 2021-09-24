@@ -1,6 +1,6 @@
-# Auto Time Management Planner (ATMP)
+# Automatic Time Management Planner (ATMP)
 
-Updated: February 10, 2020, by June Hu
+Updated: February 10, 2020
 
 This task scheduler (a.k.a. time planner) aims to automatically, scientifically schedule various activities for students. 
 
